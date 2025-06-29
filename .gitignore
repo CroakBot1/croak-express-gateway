@@ -1,3 +1,3 @@
 git add .
-git commit -m "Fix /trade endpoint for testnet"
+git commit -m "Fix invalid package.json syntax"
 git push origin main
