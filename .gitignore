@@ -1,2 +1,5 @@
-node_modules
-.env
+git init
+git remote add origin https://github.com/YOUR_USERNAME/croak-express-gateway.git
+git add .
+git commit -m "Initial commit with express server"
+git push -u origin main
