@@ -9,7 +9,6 @@ app.get('/', (req, res) => {
   res.send('🐸 Croak Express Gateway is live!');
 });
 
-// Bybit price proxy endpoint
 app.get('/price', async (req, res) => {
   try {
     const response = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
