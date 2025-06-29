@@ -1,27 +1,23 @@
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
 
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(cors());
-app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("🟢 Croak Gateway is Live!");
-});
-
-app.post("/trade", async (req, res) => {
+app.get('/price', async (req, res) => {
   try {
-    const { symbol, side, qty } = req.body;
-    // Simulated trade for now (real trade requires Bybit API credentials)
-    res.json({ success: true, message: `Executed ${side} ${qty} ${symbol}` });
-  } catch (err) {
-    console.error("Trade error:", err.message);
-    res.status(500).json({ success: false, error: err.message });
+    const response = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
+    const price = response.data.result[0].last_price;
+    res.json({ symbol: 'ETHUSDT', price });
+  } catch (error) {
+    console.error('Error fetching ETH price:', error.message);
+    res.status(500).json({ error: 'Failed to fetch ETH price' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
