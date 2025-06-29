@@ -1,11 +1,15 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(bodyParser.json());
+
+const tradeLogs = [];
 
 // ✅ Homepage
 app.get('/', (req, res) => {
@@ -39,7 +43,42 @@ app.get('/status', (req, res) => {
   res.json({ status: 'ok', connected: true, time: new Date().toISOString() });
 });
 
-// ✅ Start
+// ✅ Simulated Trade Endpoint
+app.post('/trade', (req, res) => {
+  const { side, symbol, qty } = req.body;
+  const trade = {
+    id: tradeLogs.length + 1,
+    side,
+    symbol,
+    qty,
+    time: new Date().toISOString()
+  };
+  tradeLogs.push(trade);
+  console.log(`🟢 TRADE EXECUTED:`, trade);
+  res.json({
+    success: true,
+    message: 'Simulated trade executed (testnet)',
+    trade
+  });
+});
+
+// ✅ Memory Log
+app.get('/memory', (req, res) => {
+  res.json({ trades: tradeLogs, total: tradeLogs.length });
+});
+
+// ✅ Full Log
+app.get('/log', (req, res) => {
+  res.json(tradeLogs);
+});
+
+// ✅ Trigger Bot Command
+app.post('/trigger', (req, res) => {
+  const { action } = req.body;
+  console.log(`🚨 TRIGGERED ACTION: ${action}`);
+  res.json({ received: true, action });
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Croak Gateway running on http://localhost:${PORT}`);
+  console.log(`🚀 Croak Gateway running at http://localhost:${PORT}`);
 });
