@@ -1,45 +1,27 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
+const express = require("express");
+const cors = require("cors");
+const axios = require("axios");
 
 const app = express();
-
-// Allow any frontend access
 app.use(cors());
+app.use(express.json());
 
-// Welcome
-app.get('/', (req, res) => {
-  res.send('🐸 Croak Express Gateway is LIVE!');
+app.get("/", (req, res) => {
+  res.send("🟢 Croak Gateway is Live!");
 });
 
-// Status check endpoint
-app.get('/status', (req, res) => {
-  res.json({ status: 'OK', service: 'croak-express-gateway', timestamp: new Date() });
-});
-
-// ETH Price Endpoint
-app.get('/price', async (req, res) => {
+app.post("/trade", async (req, res) => {
   try {
-    const response = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
-    const price = response.data.result[0].last_price;
-    res.json({ symbol: 'ETHUSDT', price });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch ETH price' });
-  }
-});
-
-// BTC Price Endpoint
-app.get('/btcprice', async (req, res) => {
-  try {
-    const response = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=BTCUSDT');
-    const price = response.data.result[0].last_price;
-    res.json({ symbol: 'BTCUSDT', price });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch BTC price' });
+    const { symbol, side, qty } = req.body;
+    // Simulated trade for now (real trade requires Bybit API credentials)
+    res.json({ success: true, message: `Executed ${side} ${qty} ${symbol}` });
+  } catch (err) {
+    console.error("Trade error:", err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Croak Gateway running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
