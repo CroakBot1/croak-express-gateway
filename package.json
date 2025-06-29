@@ -1,12 +1,14 @@
 {
   "name": "croak-express-gateway",
   "version": "1.0.0",
-  "description": "Croak Coin Express Gateway",
+  "description": "Proxy server for Bybit API",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "express": "^4.18.4"
   }
 }
