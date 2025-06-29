@@ -1,23 +1,10 @@
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
-
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(cors());
-
-app.get('/price', async (req, res) => {
+app.get('/btcprice', async (req, res) => {
   try {
-    const response = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
+    const response = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=BTCUSDT');
     const price = response.data.result[0].last_price;
-    res.json({ symbol: 'ETHUSDT', price });
+    res.json({ symbol: 'BTCUSDT', price });
   } catch (error) {
-    console.error('Error fetching ETH price:', error.message);
-    res.status(500).json({ error: 'Failed to fetch ETH price' });
+    console.error('Error fetching BTC price:', error.message);
+    res.status(500).json({ error: 'Failed to fetch BTC price' });
   }
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
 });
