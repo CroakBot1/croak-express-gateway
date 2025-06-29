@@ -1,3 +1,5 @@
+git init
+git remote add origin https://github.com/YOUR_USERNAME/croak-express-gateway.git
 git add .
-git commit -m "New update"
-git push origin main
+git commit -m "✅ Full working Croak Gateway connected to CROAK BOT 61k"
+git push -u origin main
