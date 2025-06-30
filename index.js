@@ -14,25 +14,27 @@ app.get('/', (req, res) => {
   res.send('✅ Croak Express Gateway is LIVE and connected to CROAK BOT 61k');
 });
 
-// ✅ ETH Price
+// ✅ ETH Price - v5 API
 app.get('/price', async (req, res) => {
   try {
-    const { data } = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
-    const price = data.result[0].last_price;
+    const { data } = await axios.get('https://api.bybit.com/v5/market/tickers?category=linear&symbol=ETHUSDT');
+    const price = data.result.list[0].lastPrice;
     res.json({ pair: 'ETHUSDT', price });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch ETH price' });
+    console.error('❌ ETH PRICE ERROR:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to fetch ETH price', details: err.message });
   }
 });
 
-// ✅ BTC Price
+// ✅ BTC Price - v5 API
 app.get('/btcprice', async (req, res) => {
   try {
-    const { data } = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=BTCUSDT');
-    const price = data.result[0].last_price;
+    const { data } = await axios.get('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT');
+    const price = data.result.list[0].lastPrice;
     res.json({ pair: 'BTCUSDT', price });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch BTC price' });
+    console.error('❌ BTC PRICE ERROR:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to fetch BTC price', details: err.message });
   }
 });
 
@@ -62,6 +64,7 @@ app.post('/trade', async (req, res) => {
     );
     res.json({ status: 'success', result: data });
   } catch (err) {
+    console.error('❌ TRADE ERROR:', err.response?.data || err.message);
     res.status(500).json({ error: 'Trade failed', details: err.message });
   }
 });
