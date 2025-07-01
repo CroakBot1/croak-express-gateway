@@ -1,7 +1,7 @@
 {
   "name": "croak-express-gateway",
   "version": "1.0.0",
-  "description": "Croak Gateway for price feed, trade, and memory sync",
+  "description": "Croak Gateway backend for price, trade, and memory",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
