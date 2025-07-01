@@ -1,9 +1,3 @@
 {
-  "croak_test": "testing123",
-  "wallet_address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
-  "strategy_mode": "AI-61K-Hybrid",
-  "last_trade": "Buy 0.01 ETH",
-  "confidence_score": "87.3",
-  "bot_version": "v5.0-Legendary",
-  "last_update": "2025-07-01T16:55:00+08:00"
+  "status": "🧠 Ready to receive memory from frontend."
 }
