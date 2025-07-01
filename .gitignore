@@ -1,5 +1,5 @@
 git init
 git remote add origin https://github.com/YOUR_USERNAME/croak-express-gateway.git
 git add .
-git commit -m "Update: Bybit v5 API, Trade + Logs + Fixes"
+git commit -m "💾 Add memory sync backend + trading gateway"
 git push -u origin main
