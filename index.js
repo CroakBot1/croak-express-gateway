@@ -1,102 +1,64 @@
 const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+const bodyParser = require('body-parser');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-// ✅ Homepage
-app.get('/', (req, res) => {
-  res.send('✅ Croak Express Gateway is LIVE and connected to CROAK BOT 61k+');
-});
+// Store memory in a temporary JSON file
+const memoryFile = 'memory.json';
 
-// ✅ ETH Price
-app.get('/price', async (req, res) => {
-  try {
-    const { data } = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
-    const price = data.result[0].last_price;
-    res.json({ pair: 'ETHUSDT', price });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch ETH price' });
-  }
-});
-
-// ✅ BTC Price
-app.get('/btcprice', async (req, res) => {
-  try {
-    const { data } = await axios.get('https://api.bybit.com/v2/public/tickers?symbol=BTCUSDT');
-    const price = data.result[0].last_price;
-    res.json({ pair: 'BTCUSDT', price });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch BTC price' });
-  }
-});
-
-// ✅ Trade (Bybit Testnet)
-app.post('/trade', async (req, res) => {
-  const { side, qty, apiKey, apiSecret } = req.body;
-  const timestamp = Date.now();
-  const crypto = require('crypto');
-
-  const params = {
-    api_key: apiKey,
-    symbol: 'ETHUSDT',
-    side,
-    order_type: 'Market',
-    qty,
-    time_in_force: 'GoodTillCancel',
-    timestamp
-  };
-
-  const paramStr = Object.keys(params).sort().map(key => `${key}=${params[key]}`).join('&');
-  const sign = crypto.createHmac('sha256', apiSecret).update(paramStr).digest('hex');
-
-  try {
-    const { data } = await axios.post(
-      'https://api-testnet.bybit.com/v2/private/order/create',
-      new URLSearchParams({ ...params, sign }).toString(),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-    );
-    res.json({ status: 'success', result: data });
-  } catch (err) {
-    res.status(500).json({ error: 'Trade failed', details: err.message });
-  }
-});
-
-// ✅ Save Memory to Server
 app.post('/save-memory', (req, res) => {
-  try {
-    fs.writeFileSync('memory.json', JSON.stringify(req.body, null, 2));
-    res.json({ status: 'ok', message: 'Memory saved to backend.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to save memory', details: err.message });
-  }
+  const memory = req.body.memory || {};
+  fs.writeFileSync(memoryFile, JSON.stringify(memory, null, 2));
+  res.send({ status: 'success', message: 'Memory saved' });
 });
 
-// ✅ Load Memory from Server
 app.get('/load-memory', (req, res) => {
   try {
-    if (fs.existsSync('memory.json')) {
-      const data = fs.readFileSync('memory.json', 'utf8');
-      res.json(JSON.parse(data));
-    } else {
-      res.status(404).json({ error: 'No memory file found' });
-    }
+    const data = JSON.parse(fs.readFileSync(memoryFile, 'utf8'));
+    res.send({ memory: data });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to load memory', details: err.message });
+    res.status(500).send({ error: 'Memory not found or corrupt.' });
   }
 });
 
-// ✅ Status Checker
-app.get('/status', (req, res) => {
-  res.json({ status: 'ok', connected: true, time: new Date().toISOString() });
-});
+// Send memory file to Gmail every 5 minutes
+setInterval(() => {
+  if (!fs.existsSync(memoryFile)) return;
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'apploverss3@gmail.com',
+      pass: 'flnh tsyz yqwp apzz'
+    }
+  });
 
-// ✅ Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Croak Gateway running on http://localhost:${PORT}`);
-});
+  const now = new Date();
+  const subject = `📩 CroakBot Memory @ ${now.toLocaleString()}`;
+  const filename = `croakbot-${now.toISOString().replace(/[:.]/g, '-')}.txt`;
+
+  const mailOptions = {
+    from: 'CroakBot <apploverss3@gmail.com>',
+    to: 'apploverss3@gmail.com',
+    subject,
+    text: 'Attached is your latest CroakBot memory snapshot.',
+    attachments: [
+      {
+        filename,
+        path: `./${memoryFile}`
+      }
+    ]
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) return console.error('❌ Email failed:', error);
+    console.log('📬 Memory email sent:', info.response);
+  });
+}, 5 * 60 * 1000); // every 5 mins
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server ready on port ${PORT}`));
