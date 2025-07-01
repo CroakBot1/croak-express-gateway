@@ -6,28 +6,32 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json({ limit: '5mb' })); // ✅ FIX: Allow large memory payloads
+app.use(bodyParser.json({ limit: '5mb' })); // 🔧 Increase payload size
 
 const memoryFile = 'memory.json';
 
-// 🌐 API Endpoint: Save Memory
+// 🧠 Save Memory to File
 app.post('/save-memory', (req, res) => {
   const memory = req.body.memory || {};
   fs.writeFileSync(memoryFile, JSON.stringify(memory, null, 2));
   res.send({ status: 'success', message: 'Memory saved' });
 });
 
-// 🌐 API Endpoint: Load Memory
+// 🔄 Load Memory from File
 app.get('/load-memory', (req, res) => {
+  if (!fs.existsSync(memoryFile)) {
+    return res.status(404).send({ error: '📭 No memory file on server.' });
+  }
+
   try {
     const data = JSON.parse(fs.readFileSync(memoryFile, 'utf8'));
     res.send({ memory: data });
   } catch (err) {
-    res.status(404).send({ error: '📭 No memory file on server.' });
+    res.status(500).send({ error: '⚠️ Failed to read memory file.' });
   }
 });
 
-// 📩 Gmail Email Transporter
+// 📩 Email Setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -36,7 +40,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ⏰ Auto-email + delete every 5 minutes
+// ⏰ Email every 5 minutes (NO DELETE)
 setInterval(() => {
   if (!fs.existsSync(memoryFile)) return;
 
@@ -54,17 +58,9 @@ setInterval(() => {
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      console.error('❌ Failed to send email:', error);
-      return;
-    }
-
-    console.log('📬 Email sent:', info.response);
-
-    try {
-      fs.unlinkSync(memoryFile);
-      console.log('🧹 CroakBot memory file cleaned up!');
-    } catch (err) {
-      console.error('⚠️ Cleanup failed:', err);
+      console.error('❌ Email error:', error);
+    } else {
+      console.log('📬 Email sent:', info.response);
     }
   });
 }, 5 * 60 * 1000);
