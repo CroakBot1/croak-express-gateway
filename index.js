@@ -10,33 +10,44 @@ app.use(bodyParser.json());
 
 const memoryFile = 'memory.json';
 
-// 🌐 API Endpoint: Save Memory
+// ✅ Ensure memory file exists on boot
+if (!fs.existsSync(memoryFile)) {
+  fs.writeFileSync(memoryFile, JSON.stringify({}, null, 2));
+  console.log('🆕 Initialized empty memory file');
+}
+
+// 🌐 Save Memory Endpoint
 app.post('/save-memory', (req, res) => {
   const memory = req.body.memory || {};
   fs.writeFileSync(memoryFile, JSON.stringify(memory, null, 2));
   res.send({ status: 'success', message: 'Memory saved' });
 });
 
-// 🌐 API Endpoint: Load Memory
+// 🌐 Load Memory Endpoint
 app.get('/load-memory', (req, res) => {
+  if (!fs.existsSync(memoryFile)) {
+    return res.status(404).send({ error: 'Memory file not found.' });
+  }
+
   try {
     const data = JSON.parse(fs.readFileSync(memoryFile, 'utf8'));
     res.send({ memory: data });
   } catch (err) {
-    res.status(500).send({ error: 'Memory not found or corrupt.' });
+    console.error('❌ Failed to read memory:', err);
+    res.status(500).send({ error: 'Failed to load memory.' });
   }
 });
 
-// 📩 EMAIL CONFIG (Gmail + App Password)
+// 📩 Email Transporter Setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'apploverss3@gmail.com',
-    pass: 'flnh tsyz yqwp apzz'
+    pass: 'flnh tsyz yqwp apzz' // App Password
   }
 });
 
-// ⏰ AUTO EMAIL + CLEANUP every 5 minutes
+// ⏰ Email + Cleanup Every 5 Minutes
 setInterval(() => {
   if (!fs.existsSync(memoryFile)) return;
 
@@ -49,31 +60,22 @@ setInterval(() => {
     to: 'apploverss3@gmail.com',
     subject,
     text: 'Attached is your latest CroakBot memory snapshot.',
-    attachments: [
-      {
-        filename,
-        path: `./${memoryFile}`
-      }
-    ]
+    attachments: [{ filename, path: `./${memoryFile}` }]
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('❌ Failed to send email:', error);
-      return;
-    }
-
+    if (error) return console.error('❌ Email failed:', error);
     console.log('📬 Email sent:', info.response);
 
-    // ✅ CLEANUP: Delete the memory file after sending
+    // ✅ Delete file after sending
     try {
       fs.unlinkSync(memoryFile);
-      console.log('🧹 CroakBot memory file cleaned up!');
+      console.log('🧹 Cleaned up memory.json!');
     } catch (err) {
-      console.error('⚠️ Cleanup failed:', err);
+      console.error('⚠️ Failed cleanup:', err);
     }
   });
-}, 5 * 60 * 1000); // 5 minutes
+}, 5 * 60 * 1000);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 CroakBot Memory Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 CroakBot Server running on port ${PORT}`));
