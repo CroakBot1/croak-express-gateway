@@ -1,5 +1,5 @@
 git init
 git remote add origin https://github.com/YOUR_USERNAME/croak-express-gateway.git
 git add .
-git commit -m "💾 Add memory sync backend + trading gateway"
+git commit -m "Update: Memory endpoints added"
 git push -u origin main
