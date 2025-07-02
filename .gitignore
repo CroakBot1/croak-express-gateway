@@ -1,3 +1,3 @@
-node_modules/
-memory.json
+node_modules
 .env
+memory.json
