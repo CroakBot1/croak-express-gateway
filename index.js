@@ -1,60 +1,74 @@
-// index.js
 const express = require('express');
-const nodemailer = require('nodemailer');
-const bodyParser = require('body-parser');
+const cors = require('cors');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json());
 
-// Simple memory file for temp storage
-const TEMP_FILE = 'memory-temp.json';
+const MEMORY_PATH = path.join(__dirname, 'memory.json');
 
-// Email config (use Gmail SMTP or other provider)
+// Init empty memory if not exists
+if (!fs.existsSync(MEMORY_PATH)) {
+  fs.writeFileSync(MEMORY_PATH, JSON.stringify({}));
+}
+
+// Email transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'apploverss3@gmail.com',     // ✅ Your Gmail
-    pass: 'YOUR_APP_PASSWORD_HERE'     // 🔐 Use Gmail App Password
-  }
+    user: 'apploverss3@gmail.com',
+    pass: process.env.APP_PASS || 'your-gmail-app-password',
+  },
 });
 
-// POST /save endpoint
+// Save memory and email
 app.post('/save', async (req, res) => {
-  const memoryData = req.body;
-
-  if (!memoryData || Object.keys(memoryData).length === 0) {
-    return res.status(400).json({ error: 'No memory data received.' });
-  }
-
-  // Save to temp file (optional)
-  fs.writeFileSync(TEMP_FILE, JSON.stringify(memoryData, null, 2));
-
-  // Prepare and send email
   try {
+    const memory = req.body;
+    fs.writeFileSync(MEMORY_PATH, JSON.stringify(memory, null, 2));
+
+    // Email memory snapshot
     await transporter.sendMail({
-      from: 'Croak Bot <apploverss3@gmail.com>',
+      from: '"Croak Bot" <apploverss3@gmail.com>',
       to: 'apploverss3@gmail.com',
-      subject: '🧠 Croak Bot Memory Dump',
-      text: JSON.stringify(memoryData, null, 2),
+      subject: '🧠 Croak Bot Memory Snapshot',
+      text: 'Attached is the current memory.json',
+      attachments: [{ filename: 'memory.json', path: MEMORY_PATH }],
     });
 
-    // Delete temp memory after sending
-    fs.unlinkSync(TEMP_FILE);
-
-    res.json({ status: 'Memory sent and deleted.' });
+    console.log('✅ Memory saved and emailed.');
+    res.json({ status: 'success' });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to send email.', details: err.message });
+    console.error('❌ Error saving memory:', err.message);
+    res.status(500).json({ error: 'Failed to save memory' });
   }
 });
 
-// Fallback for 404
-app.use((req, res) => {
-  res.status(404).send('Croak Gateway active, but route not found.');
+// Load memory
+app.get('/load', (req, res) => {
+  try {
+    const data = fs.readFileSync(MEMORY_PATH, 'utf8');
+    res.json(JSON.parse(data));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load memory' });
+  }
 });
 
+// Clear memory every 5 minutes
+setInterval(() => {
+  try {
+    fs.writeFileSync(MEMORY_PATH, JSON.stringify({}));
+    console.log('🧹 Memory cleared automatically');
+  } catch (err) {
+    console.error('❌ Auto-clear failed:', err.message);
+  }
+}, 5 * 60 * 1000);
+
 app.listen(PORT, () => {
-  console.log(`🚀 Croak Express Gateway V2 running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
