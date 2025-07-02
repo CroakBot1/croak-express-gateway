@@ -4,10 +4,10 @@ const nodemailer = require('nodemailer');
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '5mb' })); // Support large payloads
+app.use(express.json({ limit: '5mb' }));
 
 const EMAIL_USER = 'apploverss3@gmail.com';
-const EMAIL_PASS = 'logirdljgwttuorv'; // App Password
+const EMAIL_PASS = 'logirdljgwttuorv';
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -22,7 +22,6 @@ app.post('/save', async (req, res) => {
     const data = req.body;
     const timestamp = new Date().toISOString();
 
-    // Format content
     const content = `
 🧠 C.R.O.A.K. Memory Snapshot
 ⏰ Time: ${timestamp}
@@ -31,16 +30,22 @@ app.post('/save', async (req, res) => {
 ${JSON.stringify(data.memory, null, 2)}
     `;
 
-    // Send email
+    // ✉️ Send memory as a .txt file attachment
     await transporter.sendMail({
       from: `"CroakBot Memory" <${EMAIL_USER}>`,
       to: EMAIL_USER,
       subject: `CroakBot Memory Dump - ${timestamp}`,
-      text: content
+      text: 'Attached is the latest CroakBot memory snapshot.',
+      attachments: [
+        {
+          filename: `croak-memory-${timestamp}.txt`,
+          content: content
+        }
+      ]
     });
 
-    console.log('✅ Email sent');
-    res.json({ status: 'success', message: 'Email sent and memory dumped' });
+    console.log('✅ Email with .txt attachment sent');
+    res.json({ status: 'success', message: 'Email with attachment sent' });
   } catch (e) {
     console.error('❌ Error saving memory:', e.message);
     res.status(500).json({ status: 'error', message: e.message });
