@@ -1,74 +1,73 @@
+// index.js (Full Fix Backend)
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
-const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
-const MEMORY_PATH = path.join(__dirname, 'memory.json');
+let lastMemory = null;
 
-// Init empty memory if not exists
-if (!fs.existsSync(MEMORY_PATH)) {
-  fs.writeFileSync(MEMORY_PATH, JSON.stringify({}));
-}
+// Endpoint to save memory from frontend
+app.post('/save', (req, res) => {
+  const memory = req.body.memory;
+  const timestamp = new Date().toISOString();
+  if (!memory) return res.status(400).send('No memory provided');
 
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'apploverss3@gmail.com',
-    pass: process.env.APP_PASS || 'your-gmail-app-password',
-  },
+  const json = JSON.stringify({ memory, timestamp }, null, 2);
+  fs.writeFileSync('memory.json', json);
+  lastMemory = json;
+
+  console.log(`[SERVER] Memory saved at ${timestamp}`);
+
+  // Email every save
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+
+  const mailOptions = {
+    from: `Croak Bot Server <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_TO,
+    subject: `🧠 Hybrid 61k++ Memory Update` ,
+    text: `Attached is the latest memory snapshot.`,
+    attachments: [
+      {
+        filename: 'memory.json',
+        content: json
+      }
+    ]
+  };
+
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) {
+      console.error('❌ Email error:', err);
+    } else {
+      console.log('📩 Email sent:', info.response);
+    }
+  });
+
+  // Optional: auto-delete after 5 mins (in-memory only)
+  setTimeout(() => {
+    lastMemory = null;
+    console.log('[SERVER] Memory auto-cleared after 5 minutes');
+  }, 300000);
+
+  res.send({ status: 'OK', saved: true });
 });
 
-// Save memory and email
-app.post('/save', async (req, res) => {
-  try {
-    const memory = req.body;
-    fs.writeFileSync(MEMORY_PATH, JSON.stringify(memory, null, 2));
-
-    // Email memory snapshot
-    await transporter.sendMail({
-      from: '"Croak Bot" <apploverss3@gmail.com>',
-      to: 'apploverss3@gmail.com',
-      subject: '🧠 Croak Bot Memory Snapshot',
-      text: 'Attached is the current memory.json',
-      attachments: [{ filename: 'memory.json', path: MEMORY_PATH }],
-    });
-
-    console.log('✅ Memory saved and emailed.');
-    res.json({ status: 'success' });
-  } catch (err) {
-    console.error('❌ Error saving memory:', err.message);
-    res.status(500).json({ error: 'Failed to save memory' });
-  }
+// Optional endpoint to check memory
+app.get('/memory', (req, res) => {
+  if (!lastMemory) return res.status(404).send('No memory available');
+  res.type('json').send(lastMemory);
 });
 
-// Load memory
-app.get('/load', (req, res) => {
-  try {
-    const data = fs.readFileSync(MEMORY_PATH, 'utf8');
-    res.json(JSON.parse(data));
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to load memory' });
-  }
-});
-
-// Clear memory every 5 minutes
-setInterval(() => {
-  try {
-    fs.writeFileSync(MEMORY_PATH, JSON.stringify({}));
-    console.log('🧹 Memory cleared automatically');
-  } catch (err) {
-    console.error('❌ Auto-clear failed:', err.message);
-  }
-}, 5 * 60 * 1000);
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
