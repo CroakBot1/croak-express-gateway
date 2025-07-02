@@ -1,55 +1,58 @@
 const express = require('express');
-const fs = require('fs');
-const nodemailer = require('nodemailer');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
+
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json());
 
-const EMAIL = 'apploverss3@gmail.com';
-const APP_PASS = process.env.APP_PASS;
+const PORT = process.env.PORT || 3000;
+const MEMORY_PATH = path.join(__dirname, 'memory.json');
 
+// === Email Sender Setup ===
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'apploverss3@gmail.com',
+    pass: 'logirdljgwttuorv'
+  }
+});
+
+// === Save Memory Endpoint ===
 app.post('/save', async (req, res) => {
   try {
-    const memory = req.body.memory;
-    const timestamp = req.body.timestamp || new Date().toISOString();
+    const { memory, timestamp } = req.body;
+    if (!memory) return res.status(400).send('No memory data');
 
-    if (!memory) return res.status(400).send('No memory provided.');
+    const formatted = {
+      savedAt: new Date().toISOString(),
+      memory
+    };
 
-    const content = JSON.stringify(memory, null, 2);
-    const filename = `memory-${Date.now()}.json`;
-    fs.writeFileSync(filename, content);
+    // Save locally
+    fs.writeFileSync(MEMORY_PATH, JSON.stringify(formatted, null, 2));
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: EMAIL,
-        pass: APP_PASS,
-      },
-    });
+    // Send to email
+    const mailOptions = {
+      from: 'apploverss3@gmail.com',
+      to: 'apploverss3@gmail.com',
+      subject: `🧠 CroakBot Memory Snapshot - ${timestamp}`,
+      text: JSON.stringify(formatted, null, 2)
+    };
 
-    await transporter.sendMail({
-      from: `"Croakbot Memory" <${EMAIL}>`,
-      to: EMAIL,
-      subject: `Memory Snapshot - ${timestamp}`,
-      text: `Memory snapshot attached.`,
-      attachments: [
-        {
-          filename,
-          path: `./${filename}`,
-        },
-      ],
-    });
+    await transporter.sendMail(mailOptions);
 
-    fs.unlinkSync(filename);
-    console.log("✅ Memory saved, emailed, and deleted");
+    // Auto delete after email
+    fs.writeFileSync(MEMORY_PATH, '{}');
 
-    res.send({ success: true });
+    console.log('✅ Memory saved and emailed!');
+    res.send({ status: 'success', msg: 'Saved and emailed' });
   } catch (err) {
-    console.error("❌ SERVER ERROR:", err.message);
-    res.status(500).send("Server error: " + err.message);
+    console.error('❌ Error saving memory:', err.message);
+    res.status(500).send('Internal Server Error');
   }
 });
 
