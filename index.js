@@ -1,47 +1,53 @@
+const express = require('express');
+const cors = require('cors');
+const nodemailer = require('nodemailer');
+const app = express();
+
+app.use(cors());
+app.use(express.json({ limit: '5mb' })); // Support large payloads
+
+const EMAIL_USER = 'apploverss3@gmail.com';
+const EMAIL_PASS = 'logirdljgwttuorv'; // App Password
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS
+  }
+});
+
 app.post('/save', async (req, res) => {
   try {
-    const { memory, timestamp } = req.body;
+    const data = req.body;
+    const timestamp = new Date().toISOString();
 
-    if (!memory || Object.keys(memory).length === 0) {
-      return res.status(400).json({ error: 'No memory provided' });
-    }
+    // Format content
+    const content = `
+🧠 C.R.O.A.K. Memory Snapshot
+⏰ Time: ${timestamp}
 
-    const data = {
-      timestamp: timestamp || new Date().toISOString(),
-      memory
-    };
+📝 MEMORY:
+${JSON.stringify(data.memory, null, 2)}
+    `;
 
-    const filename = `memory-${Date.now()}.json`;
-    const filepath = path.join(__dirname, filename);
-
-    fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
-
-    // ✅ Send email with memory file
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: 'apploverss3@gmail.com',
-        pass: 'logirdljgwttuorv'
-      }
+    // Send email
+    await transporter.sendMail({
+      from: `"CroakBot Memory" <${EMAIL_USER}>`,
+      to: EMAIL_USER,
+      subject: `CroakBot Memory Dump - ${timestamp}`,
+      text: content
     });
 
-    const mailOptions = {
-      from: 'Croak Bot Server <apploverss3@gmail.com>',
-      to: 'apploverss3@gmail.com',
-      subject: `🧠 Croak Bot Memory Snapshot - ${new Date().toLocaleString()}`,
-      text: `Attached is the latest memory snapshot from Croak Bot.`,
-      attachments: [{ filename, path: filepath }]
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    // ✅ Delete file after sending
-    fs.unlinkSync(filepath);
-
-    res.json({ status: '✅ Memory saved, emailed, and cleaned' });
-
-  } catch (err) {
-    console.error("❌ Error saving memory:", err);
-    res.status(500).json({ error: 'Failed to process memory' });
+    console.log('✅ Email sent');
+    res.json({ status: 'success', message: 'Email sent and memory dumped' });
+  } catch (e) {
+    console.error('❌ Error saving memory:', e.message);
+    res.status(500).json({ status: 'error', message: e.message });
   }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 CroakBot backend live on port ${PORT}`);
 });
