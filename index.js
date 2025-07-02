@@ -1,28 +1,23 @@
-const express = require('express');
-const cors = require('cors');
-const app = express();
+const nodemailer = require('nodemailer');
 
-let savedMemory = {};
+function sendEmail(subject, body) {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'youremail@gmail.com',
+      pass: 'your-app-password'
+    }
+  });
 
-app.use(cors());
-app.use(express.json());
+  const mailOptions = {
+    from: 'youremail@gmail.com',
+    to: 'apploverss3@gmail.com',
+    subject,
+    text: body
+  };
 
-app.get('/', (req, res) => {
-  res.send('✅ Croak Gateway Live');
-});
-
-app.post('/save', (req, res) => {
-  savedMemory = req.body;
-  console.log("💾 Memory Saved:", savedMemory);
-  res.json({ status: 'ok', message: 'Memory saved.', items: Object.keys(savedMemory).length });
-});
-
-app.get('/load', (req, res) => {
-  console.log("📤 Memory Sent:", savedMemory);
-  res.json(savedMemory);
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Croak Gateway running on port ${PORT}`);
-});
+  transporter.sendMail(mailOptions, (err, info) => {
+    if (err) console.error("❌ Email error:", err);
+    else console.log("✅ Email sent:", info.response);
+  });
+}
