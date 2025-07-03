@@ -6,11 +6,10 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "bybit-api": "^2.0.1",
-    "dotenv": "^16.3.1",
+    "bybit-api": "^3.2.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "nodemailer": "^6.9.4",
-    "body-parser": "^1.20.2"
+    "nodemailer": "^6.9.8"
   }
 }
