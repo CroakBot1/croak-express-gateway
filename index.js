@@ -2,61 +2,76 @@ const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const { LinearClient } = require('bybit-api');
-require('dotenv').config();
 
 const app = express();
-app.use(cors());
+app.use(cors()); // ✅ Enable CORS for all origins
 app.use(express.json({ limit: '5mb' }));
 
-// ✅ Setup Bybit client for real execution (testnet)
+// === Bybit credentials ===
+const API_KEY = 'gFfn69kLKBsRzAQpSo';
+const API_SECRET = 'MaZLcwY6KaeaAVqiNPB6zLXZOpYwi1UDQdex';
+
 const client = new LinearClient({
-  key: process.env.BYBIT_API_KEY,
-  secret: process.env.BYBIT_API_SECRET,
-  testnet: true,
+  key: API_KEY,
+  secret: API_SECRET,
+  testnet: false, // set to true if using testnet
 });
 
-// ✅ Send email result to you
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_FROM,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-// ✅ Accept trade instructions from frontend
+// === Trade handler ===
 app.post('/execute-trade', async (req, res) => {
   const { side, qty } = req.body;
+
+  if (!side || !qty) {
+    return res.status(400).json({ error: 'Missing side or quantity' });
+  }
 
   try {
     const order = await client.placeActiveOrder({
       symbol: 'ETHUSDT',
-      side: side === 'BUY' ? 'Buy' : 'Sell',
+      side: side.toUpperCase(),
       order_type: 'Market',
-      qty: qty,
+      qty,
       time_in_force: 'GoodTillCancel',
+      reduce_only: false,
+      close_on_trigger: false,
     });
 
-    // ✅ Notify you via email
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: process.env.EMAIL_TO,
-      subject: `Croak Bot Trade Executed: ${side}`,
-      html: `<h3>${side} ${qty} ETHUSDT executed on Bybit Testnet</h3><pre>${JSON.stringify(order.data, null, 2)}</pre>`,
-    });
-
-    res.json({ status: 'success', order: order.data });
+    console.log('✅ Order placed:', order);
+    res.json({ status: 'success', order });
   } catch (err) {
-    console.error('[Trade Error]', err?.message || err);
-    res.status(500).json({ status: 'error', message: err?.message || 'Unknown error' });
+    console.error('❌ Order failed:', err);
+    res.status(500).json({ error: 'Order execution failed', details: err });
   }
 });
 
-// ✅ Default route
-app.get('/', (req, res) => {
-  res.send('CROAK BOT BACKEND RUNNING 🐸');
+// === Email sender ===
+app.post('/send-email', async (req, res) => {
+  const { to, subject, message } = req.body;
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'your@email.com',
+      pass: 'your-app-password'
+    }
+  });
+
+  try {
+    await transporter.sendMail({
+      from: '"Croak Bot" <your@email.com>',
+      to,
+      subject,
+      text: message,
+    });
+    res.json({ status: 'Email sent' });
+  } catch (err) {
+    console.error('Email failed:', err);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
 });
 
-// ✅ Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
+// === Start server ===
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on ${PORT}`);
+});
