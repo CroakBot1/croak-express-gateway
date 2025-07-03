@@ -1,60 +1,73 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
+const { LinearClient } = require('bybit-api');
+require('dotenv').config();
 
-const app = express(); // ✅ Mao ni ang kulang sa imong logs
+const app = express();
+const port = process.env.PORT || 3000;
 
+// === Middleware ===
 app.use(cors());
-app.use(express.json({ limit: '5mb' }));
+app.use(bodyParser.json({ limit: '10mb' }));
 
-const EMAIL_USER = process.env.EMAIL_USER || 'apploverss3@gmail.com';
-const EMAIL_PASS = process.env.EMAIL_PASS || 'logirdljgwttuorv';
+// === Bybit Client ===
+const client = new LinearClient({
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET,
+  testnet: true,
+});
 
+// === Email Transport ===
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS
-  }
+    user: process.env.EMAIL_USER,         // e.g. apploverss3@gmail.com
+    pass: process.env.EMAIL_PASS,         // Gmail app password
+  },
 });
 
-app.post('/save', async (req, res) => {
+// === Route: Test ping ===
+app.get('/', (req, res) => {
+  res.send('CROAK BOT BACKEND is LIVE 🐸🚀');
+});
+
+// === Route: Execute Trade ===
+app.post('/execute-trade', async (req, res) => {
+  const { side, qty } = req.body;
+
+  if (!['Buy', 'Sell'].includes(side)) {
+    return res.status(400).json({ error: 'Invalid trade side' });
+  }
+
   try {
-    const data = req.body;
-    const timestamp = new Date().toISOString();
-
-    console.log("📥 Incoming memory:", data);
-
-    const content = `
-🧠 C.R.O.A.K. Memory Snapshot
-⏰ Time: ${timestamp}
-
-📝 MEMORY:
-${JSON.stringify(data.memory, null, 2)}
-    `;
-
-    await transporter.sendMail({
-      from: `"CroakBot Memory" <${EMAIL_USER}>`,
-      to: EMAIL_USER,
-      subject: `CroakBot Memory Dump - ${timestamp}`,
-      text: 'Attached is the latest CroakBot memory snapshot.',
-      attachments: [
-        {
-          filename: `croak-memory-${timestamp}.txt`,
-          content: content
-        }
-      ]
+    const order = await client.placeActiveOrder({
+      symbol: 'ETHUSDT',
+      side,
+      order_type: 'Market',
+      qty: qty || 0.01,
+      time_in_force: 'GoodTillCancel',
+      reduce_only: false,
+      close_on_trigger: false,
     });
 
-    console.log('✅ Email with .txt attachment sent');
-    res.json({ status: 'success', message: 'Email with attachment sent' });
-  } catch (e) {
-    console.error('❌ Error saving memory:', e.message);
-    res.status(500).json({ status: 'error', message: e.message });
+    // === Send Email Notification ===
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: `🚀 CROAK BOT Executed ${side} Trade`,
+      text: `Trade executed:\nSide: ${side}\nQty: ${qty || 0.01}\nSymbol: ETHUSDT\nStatus: SUCCESS`,
+    });
+
+    res.json({ success: true, result: order });
+  } catch (error) {
+    console.error('❌ Trade failed:', error);
+    res.status(500).json({ error: 'Trade failed', details: error.toString() });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 CroakBot backend live on port ${PORT}`);
+// === Start Server ===
+app.listen(port, () => {
+  console.log(`✅ CROAK BOT BACKEND running on http://localhost:${port}`);
 });
