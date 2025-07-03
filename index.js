@@ -1,31 +1,9 @@
-const express = require('express');
-const cors = require('cors');
-const nodemailer = require('nodemailer');
-const app = express(); // ✅ Declare Express app before using it
-
-app.use(cors());
-app.use(express.json({ limit: '5mb' }));
-
-// 🌐 Health Check
-app.get('/', (req, res) => {
-  res.send('✅ CroakBot Backend is Live!');
-});
-
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS
-  }
-});
-
 app.post('/save', async (req, res) => {
   try {
     const data = req.body;
     const timestamp = new Date().toISOString();
+
+    console.log("📥 Incoming memory:", data); // Add this line
 
     const content = `
 🧠 C.R.O.A.K. Memory Snapshot
@@ -48,15 +26,10 @@ ${JSON.stringify(data.memory, null, 2)}
       ]
     });
 
-    console.log('✅ Email sent successfully!');
-    res.json({ status: 'success', message: 'Memory sent via email.' });
+    console.log('✅ Email with .txt attachment sent');
+    res.json({ status: 'success', message: 'Email with attachment sent' });
   } catch (e) {
-    console.error('❌ Error:', e.message);
+    console.error('❌ Error saving memory:', e.message);
     res.status(500).json({ status: 'error', message: e.message });
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 CroakBot backend running on port ${PORT}`);
 });
