@@ -1,73 +1,62 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const { LinearClient } = require('bybit-api');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-// === Middleware ===
 app.use(cors());
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(express.json({ limit: '5mb' }));
 
-// === Bybit Client ===
+// ✅ Setup Bybit client for real execution (testnet)
 const client = new LinearClient({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
   testnet: true,
 });
 
-// === Email Transport ===
+// ✅ Send email result to you
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,         // e.g. apploverss3@gmail.com
-    pass: process.env.EMAIL_PASS,         // Gmail app password
+    user: process.env.EMAIL_FROM,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
-// === Route: Test ping ===
-app.get('/', (req, res) => {
-  res.send('CROAK BOT BACKEND is LIVE 🐸🚀');
-});
-
-// === Route: Execute Trade ===
+// ✅ Accept trade instructions from frontend
 app.post('/execute-trade', async (req, res) => {
   const { side, qty } = req.body;
-
-  if (!['Buy', 'Sell'].includes(side)) {
-    return res.status(400).json({ error: 'Invalid trade side' });
-  }
 
   try {
     const order = await client.placeActiveOrder({
       symbol: 'ETHUSDT',
-      side,
+      side: side === 'BUY' ? 'Buy' : 'Sell',
       order_type: 'Market',
-      qty: qty || 0.01,
+      qty: qty,
       time_in_force: 'GoodTillCancel',
-      reduce_only: false,
-      close_on_trigger: false,
     });
 
-    // === Send Email Notification ===
+    // ✅ Notify you via email
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
-      subject: `🚀 CROAK BOT Executed ${side} Trade`,
-      text: `Trade executed:\nSide: ${side}\nQty: ${qty || 0.01}\nSymbol: ETHUSDT\nStatus: SUCCESS`,
+      from: process.env.EMAIL_FROM,
+      to: process.env.EMAIL_TO,
+      subject: `Croak Bot Trade Executed: ${side}`,
+      html: `<h3>${side} ${qty} ETHUSDT executed on Bybit Testnet</h3><pre>${JSON.stringify(order.data, null, 2)}</pre>`,
     });
 
-    res.json({ success: true, result: order });
-  } catch (error) {
-    console.error('❌ Trade failed:', error);
-    res.status(500).json({ error: 'Trade failed', details: error.toString() });
+    res.json({ status: 'success', order: order.data });
+  } catch (err) {
+    console.error('[Trade Error]', err?.message || err);
+    res.status(500).json({ status: 'error', message: err?.message || 'Unknown error' });
   }
 });
 
-// === Start Server ===
-app.listen(port, () => {
-  console.log(`✅ CROAK BOT BACKEND running on http://localhost:${port}`);
+// ✅ Default route
+app.get('/', (req, res) => {
+  res.send('CROAK BOT BACKEND RUNNING 🐸');
 });
+
+// ✅ Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
