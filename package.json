@@ -1,15 +1,16 @@
 {
-  "name": "croakbot-backend",
+  "name": "croak-bot-backend",
   "version": "1.0.0",
-  "description": "Croak Bot Express Backend",
   "main": "index.js",
-  "type": "commonjs",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
+    "bybit-api": "^2.0.1",
+    "dotenv": "^16.3.1",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "nodemailer": "^6.9.8"
+    "nodemailer": "^6.9.4",
+    "body-parser": "^1.20.2"
   }
 }
