@@ -1,9 +1,29 @@
+const express = require('express');
+const cors = require('cors');
+const nodemailer = require('nodemailer');
+
+const app = express(); // ✅ Mao ni ang kulang sa imong logs
+
+app.use(cors());
+app.use(express.json({ limit: '5mb' }));
+
+const EMAIL_USER = process.env.EMAIL_USER || 'apploverss3@gmail.com';
+const EMAIL_PASS = process.env.EMAIL_PASS || 'logirdljgwttuorv';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS
+  }
+});
+
 app.post('/save', async (req, res) => {
   try {
     const data = req.body;
     const timestamp = new Date().toISOString();
 
-    console.log("📥 Incoming memory:", data); // Add this line
+    console.log("📥 Incoming memory:", data);
 
     const content = `
 🧠 C.R.O.A.K. Memory Snapshot
@@ -32,4 +52,9 @@ ${JSON.stringify(data.memory, null, 2)}
     console.error('❌ Error saving memory:', e.message);
     res.status(500).json({ status: 'error', message: e.message });
   }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 CroakBot backend live on port ${PORT}`);
 });
