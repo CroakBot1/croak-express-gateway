@@ -1,31 +1,36 @@
 const express = require('express');
 const cors = require('cors');
-const { RESTClient } = require('bybit-api'); // ✅ Correct import
-
+const { RESTClientV5 } = require('bybit-api'); // ✅ Correct usage for v5
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
-const client = new RESTClient({
+// ✅ Initialize Bybit REST Client (v5)
+const client = RESTClientV5({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
-  testnet: true, // set to false for live
+  testnet: true, // or false if production
 });
 
-// Sample route to test if working
-app.get('/', async (req, res) => {
+// ✅ Example endpoint to test Bybit account balance
+app.get('/balance', async (req, res) => {
   try {
-    const result = await client.getServerTime();
-    res.json({ status: 'ok', serverTime: result });
+    const result = await client.getWalletBalance({ accountType: 'UNIFIED' });
+    res.json(result);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'API error', details: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
+// ✅ Default root endpoint
+app.get('/', (req, res) => {
+  res.send('🟢 Croak Express Gateway is LIVE!');
+});
+
+// ✅ Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
