@@ -1,65 +1,93 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
+const { Web3 } = require('web3');
+const axios = require('axios');
 
 const app = express();
-app.use(cors());            // Enable CORS for all origins
-app.use(express.json());    // Parse JSON body requests
+const port = process.env.PORT || 10000;
 
-// Dummy data (simulate user balance and positions)
-let dummyBalance = { usdt: 1000 };
-let dummyPositions = [
-  { symbol: 'ETHUSDT', size: 1, entryPrice: 1900, side: 'Buy' }
-];
+app.use(cors());
+app.use(bodyParser.json());
 
-// GET /fetch-balance
-app.get('/fetch-balance', (req, res) => {
-  res.json(dummyBalance);
+// === Replace with your actual Testnet API key ===
+const API_KEY = 'your-bybit-testnet-api-key';
+const API_SECRET = 'your-bybit-testnet-api-secret';
+const BYBIT_API = 'https://api-testnet.bybit.com';
+
+const headers = {
+  'X-BYBIT-API-KEY': API_KEY,
+  'Content-Type': 'application/json',
+};
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
+// === ROUTES ===
+
+// Root Check
+app.get('/', (req, res) => {
+  res.send('🐸 Croak Express Gateway is Alive!');
 });
 
-// GET /fetch-positions
-app.get('/fetch-positions', (req, res) => {
-  res.json(dummyPositions);
+// Fetch Balance
+app.get('/fetch-balance', async (req, res) => {
+  try {
+    const result = await axios.get(`${BYBIT_API}/v5/account/wallet-balance?accountType=UNIFIED`, {
+      headers,
+    });
+
+    const usdtBalance = result.data?.result?.list?.[0]?.coin?.find(c => c.coin === 'USDT')?.availableToWithdraw;
+    res.json({ usdt: parseFloat(usdtBalance || 0) });
+  } catch (e) {
+    console.error('Balance Error:', e.message);
+    res.status(500).json({ error: 'Failed to fetch balance' });
+  }
 });
 
-// POST /place-order
-app.post('/place-order', (req, res) => {
+// Fetch Open Positions
+app.get('/fetch-positions', async (req, res) => {
+  try {
+    const result = await axios.get(`${BYBIT_API}/v5/position/list?category=linear`, {
+      headers,
+    });
+
+    const positions = result.data?.result?.list?.filter(pos => parseFloat(pos.size) > 0) || [];
+    res.json(positions);
+  } catch (e) {
+    console.error('Position Error:', e.message);
+    res.status(500).json({ error: 'Failed to fetch positions' });
+  }
+});
+
+// Place Order
+app.post('/place-order', async (req, res) => {
   const { side, qty, tp, sl } = req.body;
 
-  if (!side || !qty) {
-    return res.status(400).json({ success: false, message: 'Missing required fields: side or qty' });
+  try {
+    const result = await axios.post(`${BYBIT_API}/v5/order/create`, {
+      category: 'linear',
+      symbol: 'ETHUSDT',
+      side,
+      orderType: 'Market',
+      qty,
+      timeInForce: 'GoodTillCancel',
+      takeProfit: tp,
+      stopLoss: sl,
+    }, {
+      headers,
+    });
+
+    if (result.data.retCode === 0) {
+      res.json({ success: true, message: 'Order placed successfully' });
+    } else {
+      res.status(400).json({ success: false, error: result.data.retMsg });
+    }
+  } catch (e) {
+    console.error('Order Error:', e.response?.data || e.message);
+    res.status(500).json({ success: false, error: 'Order failed' });
   }
-
-  // Simulate adding position
-  dummyPositions.push({
-    symbol: 'ETHUSDT',
-    size: qty,
-    side: side.toUpperCase(),
-    entryPrice: 1900,  // just dummy price
-    tp,
-    sl
-  });
-
-  // Simulate balance deduction (naive)
-  dummyBalance.usdt -= qty * 1900;
-
-  console.log(`[ORDER] side=${side}, qty=${qty}, tp=${tp}, sl=${sl}`);
-
-  res.json({ success: true, message: 'Order placed successfully' });
 });
 
-// 404 handler for other routes — return JSON instead of HTML
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Endpoint not found' });
-});
-
-// Global error handler (optional)
-app.use((err, req, res, next) => {
-  console.error('Internal server error:', err);
-  res.status(500).json({ success: false, message: 'Internal server error' });
-});
-
-// Start server
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`Croak Bot Backend running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`✅ Croak Bot Backend running on port ${port}`);
 });
