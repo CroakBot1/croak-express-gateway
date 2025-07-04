@@ -6,9 +6,8 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "bybit-api": "^3.1.6",
+    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2"
+    "bybit-api": "^3.2.1"
   }
 }
