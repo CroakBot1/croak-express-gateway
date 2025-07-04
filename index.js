@@ -1,67 +1,33 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-  res.send('✅ Croak Gateway is LIVE');
+// === DUMMY WALLET BALANCE ===
+app.get('/fetch-balance', (req, res) => {
+  res.json({ balance: 69420.00, asset: 'USDT' });
 });
 
-// === FETCH BALANCE ===
-app.post('/fetch-balance', async (req, res) => {
-  try {
-    const { apiKey, apiSecret } = req.body;
-
-    // Dummy data for testing frontend
-    const fakeBalance = {
-      USDT: 1234.56,
-      BTC: 0.005,
-      ETH: 0.25
-    };
-
-    res.json(fakeBalance);
-  } catch (err) {
-    console.error('Fetch Balance Error:', err);
-    res.status(500).json({ error: 'Failed to fetch balance' });
-  }
+// === DUMMY POSITIONS ===
+app.get('/fetch-positions', (req, res) => {
+  res.json([
+    { symbol: 'ETHUSDT', side: 'long', size: 1.5, entry: 3000 },
+    { symbol: 'BTCUSDT', side: 'short', size: 0.8, entry: 60000 },
+  ]);
 });
 
-// === FETCH POSITIONS ===
-app.post('/fetch-positions', async (req, res) => {
-  try {
-    const { apiKey, apiSecret } = req.body;
-
-    // Dummy data for open trades testing
-    const positions = [
-      {
-        symbol: 'ETHUSDT',
-        side: 'Buy',
-        size: 0.5,
-        entryPrice: 3100.00,
-        unrealizedPnl: 45.00,
-        leverage: 10
-      },
-      {
-        symbol: 'BTCUSDT',
-        side: 'Sell',
-        size: 0.01,
-        entryPrice: 65000.00,
-        unrealizedPnl: -20.00,
-        leverage: 5
-      }
-    ];
-
-    res.json(positions);
-  } catch (err) {
-    console.error('Fetch Positions Error:', err);
-    res.status(500).json({ error: 'Failed to fetch positions' });
-  }
+// === SIMULATED TRADE EXECUTION ===
+app.post('/execute-trade', (req, res) => {
+  const { symbol, side, size, price } = req.body;
+  console.log(`[TRADE] ${side} ${size} ${symbol} @ ${price}`);
+  res.json({ success: true, message: `Trade executed: ${side} ${size} ${symbol} @ ${price}` });
 });
 
-// === START SERVER ===
-const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`✅ Croak Gateway running on PORT ${PORT}`);
+  console.log(`Croak Bot Backend running on port ${PORT}`);
 });
