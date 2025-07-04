@@ -8,12 +8,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// === DUMMY WALLET BALANCE ===
+// === ROUTES ===
 app.get('/fetch-balance', (req, res) => {
   res.json({ balance: 69420.00, asset: 'USDT' });
 });
 
-// === DUMMY POSITIONS ===
 app.get('/fetch-positions', (req, res) => {
   res.json([
     { symbol: 'ETHUSDT', side: 'long', size: 1.5, entry: 3000 },
@@ -21,13 +20,16 @@ app.get('/fetch-positions', (req, res) => {
   ]);
 });
 
-// === SIMULATED TRADE EXECUTION ===
 app.post('/execute-trade', (req, res) => {
   const { symbol, side, size, price } = req.body;
   console.log(`[TRADE] ${side} ${size} ${symbol} @ ${price}`);
   res.json({ success: true, message: `Trade executed: ${side} ${size} ${symbol} @ ${price}` });
 });
 
+app.get('/', (req, res) => {
+  res.send('✅ Croak Bot Backend is Live!');
+});
+
 app.listen(PORT, () => {
-  console.log(`Croak Bot Backend running on port ${PORT}`);
+  console.log(`✅ Croak Bot Backend running on port ${PORT}`);
 });
