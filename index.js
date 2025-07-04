@@ -1,44 +1,36 @@
-// == Croak Express Gateway ==
+// index.js
+
 const express = require('express');
 const cors = require('cors');
-const { RESTClient } = require('bybit-api'); // Make sure this matches installed version
+require('dotenv').config();
+
+const { RestClientV5 } = require('bybit-api'); // ✅ Correct constructor
 
 const app = express();
+const port = process.env.PORT || 3000;
+
+const client = new RestClientV5({               // ✅ Instantiate properly
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET
+});
+
 app.use(cors());
 app.use(express.json());
-
-// Replace with your actual credentials (or use Render environment variables)
-const client = new RESTClient({
-  key: process.env.BYBIT_API_KEY || 'your-api-key',
-  secret: process.env.BYBIT_API_SECRET || 'your-secret',
-  testnet: true,
-});
 
 app.get('/', (req, res) => {
   res.send('Croak Gateway Alive 🐸');
 });
 
-// === Trade Execution Route ===
 app.post('/execute-trade', async (req, res) => {
-  const { category, symbol, side, orderType, qty } = req.body;
-
   try {
-    const response = await client.submitOrder({
-      category: category || 'linear',
-      symbol,
-      side, // 'Buy' or 'Sell'
-      orderType: orderType || 'Market',
-      qty,
-    });
-
-    res.json({ success: true, data: response });
+    const result = await client.submitOrder(req.body); // Example call
+    res.json({ success: true, result });
   } catch (err) {
+    console.error('Trade Error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// === Server Listener ===
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Croak Express Gateway running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`🚀 Server listening on port ${port}`);
 });
