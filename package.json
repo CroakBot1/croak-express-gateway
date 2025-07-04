@@ -1,15 +1,7 @@
-{
-  "name": "croak-bot-backend",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "bybit-api": "^3.2.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "nodemailer": "^6.9.8"
-  }
+"dependencies": {
+  "bybit-api-sdk": "^0.2.5",         <== ✔ correct SDK
+  "cors": "^2.8.5",
+  "dotenv": "^16.3.1",
+  "express": "^4.18.2",
+  "nodemailer": "^6.9.8"
 }
