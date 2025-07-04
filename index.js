@@ -1,58 +1,83 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 const bodyParser = require('body-parser');
+const axios = require('axios');
 const crypto = require('crypto');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(bodyParser.json());
 
-const BASE_URL = 'https://api.bybit.com'; // Live Bybit Mainnet
+// ======= CONFIGURE YOUR API KEYS HERE ==========
+const API_KEY = process.env.BYBIT_API_KEY;
+const API_SECRET = process.env.BYBIT_API_SECRET;
+const BASE_URL = 'https://api-testnet.bybit.com'; // change to https://api.bybit.com for mainnet
+// ===============================================
 
-function generateSignature(params, apiSecret) {
-  const sortedKeys = Object.keys(params).sort();
-  const query = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
-  return crypto.createHmac('sha256', apiSecret).update(query).digest('hex');
+// === UTILITY: Signature Generator for V5 ===
+function generateSignature(params, secret) {
+  const orderedParams = Object.keys(params).sort().reduce((acc, key) => {
+    acc[key] = params[key];
+    return acc;
+  }, {});
+  const queryString = Object.entries(orderedParams).map(([k, v]) => `${k}=${v}`).join('&');
+  return crypto.createHmac('sha256', secret).update(queryString).digest('hex');
 }
 
+// === POST /place-order ===
 app.post('/place-order', async (req, res) => {
-  const { side, qty, tp, sl, symbol = 'ETHUSDT' } = req.body;
-  const apiKey = process.env.BYBIT_API_KEY;
-  const apiSecret = process.env.BYBIT_API_SECRET;
-  const timestamp = Date.now();
+  const { symbol, side, qty, price, license } = req.body;
 
-  const params = {
-    category: 'linear',
-    symbol,
-    side,
-    orderType: 'Market',
-    qty,
-    timeInForce: 'GoodTillCancel',
-    takeProfit: tp,
-    stopLoss: sl,
-    apiKey,
-    recvWindow: 5000,
-    timestamp
-  };
-
-  const sign = generateSignature(params, apiSecret);
-  const queryParams = { ...params, sign };
+  if (!symbol || !side || !qty || !price) {
+    return res.status(400).json({ success: false, message: 'Missing parameters' });
+  }
 
   try {
-    const response = await axios.post(`${BASE_URL}/v5/order/create`, null, {
-      params: queryParams,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
+    const timestamp = Date.now().toString();
+    const params = {
+      category: 'linear',
+      symbol,
+      side,
+      orderType: 'Limit',
+      qty: qty.toString(),
+      price: price.toString(),
+      timeInForce: 'GTC',
+      apiKey: API_KEY,
+      timestamp
+    };
 
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({
-      message: '❌ Order failed',
-      error: error.response?.data || error.message
-    });
+    const sign = generateSignature(params, API_SECRET);
+
+    const headers = {
+      'X-BYBIT-API-KEY': API_KEY,
+      'Content-Type': 'application/json'
+    };
+
+    const fullPayload = { ...params, sign };
+
+    const response = await axios.post(`${BASE_URL}/v5/order/create`, fullPayload, { headers });
+
+    if (response.data.retCode === 0) {
+      return res.json({
+        success: true,
+        orderId: response.data.result.orderId,
+        message: 'Order executed!'
+      });
+    } else {
+      return res.json({
+        success: false,
+        message: response.data.retMsg || 'Failed to place order'
+      });
+    }
+  } catch (err) {
+    console.error('Trade error:', err.message || err);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
 
-app.listen(3000, () => console.log('✅ Croak Backend Live on PORT 3000'));
+// === START SERVER ===
+app.listen(PORT, () => {
+  console.log(`✅ Croak Backend Live on PORT ${PORT}`);
+});
