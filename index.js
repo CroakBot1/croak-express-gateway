@@ -1,27 +1,31 @@
 const express = require('express');
 const cors = require('cors');
-const Bybit = require('bybit-api');
+const { RESTClient } = require('bybit-api'); // ✅ Correct import
+
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new Bybit({
-  key: process.env.API_KEY,
-  secret: process.env.API_SECRET,
-  testnet: true,
+const client = new RESTClient({
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET,
+  testnet: true, // set to false for live
 });
 
-app.get('/balance', async (req, res) => {
+// Sample route to test if working
+app.get('/', async (req, res) => {
   try {
-    const result = await client.getWalletBalance();
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    const result = await client.getServerTime();
+    res.json({ status: 'ok', serverTime: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'API error', details: err.message });
   }
 });
 
-app.listen(10000, () => {
-  console.log('✅ Server running on port 10000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
