@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { RestClientV5 } = require('bybit-api'); // ✅ Sakto ni
+const { RestClientV5 } = require('bybit-api'); // ✅ correct class name
 
 dotenv.config();
-
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -26,7 +25,7 @@ app.get('/fetch-balance', async (req, res) => {
     res.json({ usdt });
   } catch (err) {
     console.error('❌ Error fetching balance:', err?.message || err);
-    res.status(500).json({ error: 'Balance fetch failed' });
+    res.status(500).json({ error: 'Balance fetch failed', message: err?.message });
   }
 });
 
@@ -36,7 +35,7 @@ app.get('/fetch-positions', async (req, res) => {
     res.json({ positions: result.result.list || [] });
   } catch (err) {
     console.error('❌ Error fetching positions:', err?.message || err);
-    res.status(500).json({ error: 'Positions fetch failed' });
+    res.status(500).json({ error: 'Positions fetch failed', message: err?.message });
   }
 });
 
