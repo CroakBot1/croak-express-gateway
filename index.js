@@ -1,35 +1,65 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(cors());            // Enable CORS for all origins
+app.use(express.json());    // Parse JSON body requests
 
-app.use(cors());
-app.use(bodyParser.json());
+// Dummy data (simulate user balance and positions)
+let dummyBalance = { usdt: 1000 };
+let dummyPositions = [
+  { symbol: 'ETHUSDT', size: 1, entryPrice: 1900, side: 'Buy' }
+];
 
-// === ROUTES ===
+// GET /fetch-balance
 app.get('/fetch-balance', (req, res) => {
-  res.json({ balance: 69420.00, asset: 'USDT' });
+  res.json(dummyBalance);
 });
 
+// GET /fetch-positions
 app.get('/fetch-positions', (req, res) => {
-  res.json([
-    { symbol: 'ETHUSDT', side: 'long', size: 1.5, entry: 3000 },
-    { symbol: 'BTCUSDT', side: 'short', size: 0.8, entry: 60000 },
-  ]);
+  res.json(dummyPositions);
 });
 
-app.post('/execute-trade', (req, res) => {
-  const { symbol, side, size, price } = req.body;
-  console.log(`[TRADE] ${side} ${size} ${symbol} @ ${price}`);
-  res.json({ success: true, message: `Trade executed: ${side} ${size} ${symbol} @ ${price}` });
+// POST /place-order
+app.post('/place-order', (req, res) => {
+  const { side, qty, tp, sl } = req.body;
+
+  if (!side || !qty) {
+    return res.status(400).json({ success: false, message: 'Missing required fields: side or qty' });
+  }
+
+  // Simulate adding position
+  dummyPositions.push({
+    symbol: 'ETHUSDT',
+    size: qty,
+    side: side.toUpperCase(),
+    entryPrice: 1900,  // just dummy price
+    tp,
+    sl
+  });
+
+  // Simulate balance deduction (naive)
+  dummyBalance.usdt -= qty * 1900;
+
+  console.log(`[ORDER] side=${side}, qty=${qty}, tp=${tp}, sl=${sl}`);
+
+  res.json({ success: true, message: 'Order placed successfully' });
 });
 
-app.get('/', (req, res) => {
-  res.send('✅ Croak Bot Backend is Live!');
+// 404 handler for other routes — return JSON instead of HTML
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Endpoint not found' });
 });
 
+// Global error handler (optional)
+app.use((err, req, res, next) => {
+  console.error('Internal server error:', err);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
+// Start server
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`✅ Croak Bot Backend running on port ${PORT}`);
+  console.log(`Croak Bot Backend running on port ${PORT}`);
 });
