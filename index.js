@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { RESTClient } = require('bybit-api');
+const { restClientV5 } = require('bybit-api'); // ✅ correct
 
 dotenv.config();
 const app = express();
@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // ✅ Create Bybit Client (TESTNET)
-const client = new RESTClient({
+const client = restClientV5({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
   testnet: true,
