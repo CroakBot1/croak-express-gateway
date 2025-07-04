@@ -1,50 +1,36 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const { v5 } = require('bybit-api');
-
-dotenv.config();
-
+const { RestClient } = require('@bybit-api/sdk'); // ✅ CORRECT SDK
 const app = express();
-const port = process.env.PORT || 10000;
-
 app.use(cors());
 app.use(express.json());
 
-const client = new v5.RestClient({
+const client = new RestClient({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
-  testnet: false,
+  testnet: false
 });
 
-// ======= ROUTES =======
-
-// ✅ BALANCE
-app.get('/fetch-balance', async (req, res) => {
+app.post('/fetch-balance', async (req, res) => {
   try {
-    const result = await client.getWalletBalance({ accountType: 'UNIFIED' });
-    res.json(result);
-  } catch (err) {
-    console.error('❌ Error fetching balance:', err.message || err);
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    const response = await client.getWalletBalance({ accountType: 'UNIFIED' });
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Balance error:', error?.message || error);
+    res.status(500).json({ error: 'Balance fetch failed' });
   }
 });
 
-// ✅ POSITIONS
-app.get('/fetch-positions', async (req, res) => {
+app.post('/fetch-positions', async (req, res) => {
   try {
-    const result = await client.getPositionInfo({ category: 'linear' });
-    res.json(result);
-  } catch (err) {
-    console.error('❌ Error fetching positions:', err.message || err);
-    res.status(500).json({ error: 'Failed to fetch positions' });
+    const response = await client.getPositions({ category: 'linear' });
+    res.json(response);
+  } catch (error) {
+    console.error('❌ Position error:', error?.message || error);
+    res.status(500).json({ error: 'Position fetch failed' });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('✅ Croak Express Gateway is running!');
-});
-
-app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
-});
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
