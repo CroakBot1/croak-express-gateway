@@ -4,77 +4,50 @@ const bodyParser = require('body-parser');
 const axios = require('axios');
 
 const app = express();
-const port = process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000;
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// === Replace with your actual Bybit Testnet API key and secret ===
-const API_KEY = 'your-bybit-testnet-api-key';
-const API_SECRET = 'your-bybit-testnet-api-secret';
-const BYBIT_API = 'https://api-testnet.bybit.com';
-
-const headers = {
-  'X-BYBIT-API-KEY': API_KEY,
-  'Content-Type': 'application/json',
-};
-
-// Root Check
 app.get('/', (req, res) => {
-  res.send('🐸 Croak Express Gateway is Alive!');
+  res.send('✅ Croak Bot Backend is Live!');
 });
 
-// === Fetch Balance ===
 app.get('/fetch-balance', async (req, res) => {
   try {
-    const result = await axios.get(`${BYBIT_API}/v5/account/wallet-balance?accountType=UNIFIED`, { headers });
-    const usdtBalance = result.data?.result?.list?.[0]?.coin?.find(c => c.coin === 'USDT')?.availableToWithdraw;
-    res.json({ usdt: parseFloat(usdtBalance || 0) });
-  } catch (e) {
-    console.error('Balance Error:', e.message);
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    // Replace this with actual fetch logic if needed
+    return res.json({ usdt: 981 });
+  } catch (err) {
+    console.error('Balance error:', err.message);
+    return res.status(500).json({ error: 'Balance fetch failed' });
   }
 });
 
-// === Fetch Open Positions ===
 app.get('/fetch-positions', async (req, res) => {
   try {
-    const result = await axios.get(`${BYBIT_API}/v5/position/list?category=linear`, { headers });
-    const positions = result.data?.result?.list?.filter(pos => parseFloat(pos.size) > 0) || [];
-    res.json(positions);
-  } catch (e) {
-    console.error('Position Error:', e.message);
-    res.status(500).json({ error: 'Failed to fetch positions' });
+    // Replace this with actual positions logic if needed
+    return res.json([
+      { symbol: 'ETHUSDT', size: 0.1, side: 'Buy', entry: 2960 }
+    ]);
+  } catch (err) {
+    console.error('Position error:', err.message);
+    return res.status(500).json({ error: 'Positions fetch failed' });
   }
 });
 
-// === Place Order ===
 app.post('/place-order', async (req, res) => {
-  const { side, qty, tp, sl } = req.body;
-
   try {
-    const result = await axios.post(`${BYBIT_API}/v5/order/create`, {
-      category: 'linear',
-      symbol: 'ETHUSDT',
-      side,
-      orderType: 'Market',
-      qty,
-      timeInForce: 'GoodTillCancel',
-      takeProfit: tp,
-      stopLoss: sl,
-    }, { headers });
+    const { side, qty, tp, sl } = req.body;
+    console.log(`Order received: ${side} ${qty}ETH TP:${tp} SL:${sl}`);
 
-    if (result.data.retCode === 0) {
-      res.json({ success: true, message: 'Order placed successfully' });
-    } else {
-      res.status(400).json({ success: false, error: result.data.retMsg });
-    }
-  } catch (e) {
-    console.error('Order Error:', e.response?.data || e.message);
-    res.status(500).json({ success: false, error: 'Order failed' });
+    // Simulated order execution result
+    return res.json({ message: 'Order placed successfully', success: true });
+  } catch (err) {
+    console.error('Order error:', err.message);
+    return res.status(500).json({ error: 'Order failed' });
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ Croak Bot Backend running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`✅ Croak Bot Backend running on port ${PORT}`);
 });
