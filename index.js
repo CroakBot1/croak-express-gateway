@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { Web3 } = require('web3');
 const axios = require('axios');
 
 const app = express();
@@ -10,7 +9,7 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// === Replace with your actual Testnet API key ===
+// === Replace with your actual Bybit Testnet API key and secret ===
 const API_KEY = 'your-bybit-testnet-api-key';
 const API_SECRET = 'your-bybit-testnet-api-secret';
 const BYBIT_API = 'https://api-testnet.bybit.com';
@@ -20,22 +19,15 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
-// === ROUTES ===
-
 // Root Check
 app.get('/', (req, res) => {
   res.send('🐸 Croak Express Gateway is Alive!');
 });
 
-// Fetch Balance
+// === Fetch Balance ===
 app.get('/fetch-balance', async (req, res) => {
   try {
-    const result = await axios.get(`${BYBIT_API}/v5/account/wallet-balance?accountType=UNIFIED`, {
-      headers,
-    });
-
+    const result = await axios.get(`${BYBIT_API}/v5/account/wallet-balance?accountType=UNIFIED`, { headers });
     const usdtBalance = result.data?.result?.list?.[0]?.coin?.find(c => c.coin === 'USDT')?.availableToWithdraw;
     res.json({ usdt: parseFloat(usdtBalance || 0) });
   } catch (e) {
@@ -44,13 +36,10 @@ app.get('/fetch-balance', async (req, res) => {
   }
 });
 
-// Fetch Open Positions
+// === Fetch Open Positions ===
 app.get('/fetch-positions', async (req, res) => {
   try {
-    const result = await axios.get(`${BYBIT_API}/v5/position/list?category=linear`, {
-      headers,
-    });
-
+    const result = await axios.get(`${BYBIT_API}/v5/position/list?category=linear`, { headers });
     const positions = result.data?.result?.list?.filter(pos => parseFloat(pos.size) > 0) || [];
     res.json(positions);
   } catch (e) {
@@ -59,7 +48,7 @@ app.get('/fetch-positions', async (req, res) => {
   }
 });
 
-// Place Order
+// === Place Order ===
 app.post('/place-order', async (req, res) => {
   const { side, qty, tp, sl } = req.body;
 
@@ -73,9 +62,7 @@ app.post('/place-order', async (req, res) => {
       timeInForce: 'GoodTillCancel',
       takeProfit: tp,
       stopLoss: sl,
-    }, {
-      headers,
-    });
+    }, { headers });
 
     if (result.data.retCode === 0) {
       res.json({ success: true, message: 'Order placed successfully' });
