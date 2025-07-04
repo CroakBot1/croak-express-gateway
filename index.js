@@ -1,26 +1,23 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { restClientV5 } = require('bybit-api'); // ✅ correct
+const { RestClientV5 } = require('bybit-api');
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Create Bybit Client (TESTNET)
-const client = restClientV5({
+const client = new RestClientV5({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
   testnet: true,
 });
 
-// ✅ Default Home Route
 app.get('/', (req, res) => {
   res.send('✅ Croak Express Gateway LIVE!');
 });
 
-// ✅ Fetch USDT Wallet Balance
 app.get('/fetch-balance', async (req, res) => {
   try {
     const result = await client.getWalletBalance({ accountType: 'UNIFIED' });
@@ -32,7 +29,6 @@ app.get('/fetch-balance', async (req, res) => {
   }
 });
 
-// ✅ Fetch Open Positions
 app.get('/fetch-positions', async (req, res) => {
   try {
     const result = await client.getPositions({ category: 'linear' });
@@ -43,7 +39,6 @@ app.get('/fetch-positions', async (req, res) => {
   }
 });
 
-// ✅ Server Start
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on ${PORT}`);
