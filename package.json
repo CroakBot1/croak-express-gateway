@@ -1,5 +1,5 @@
 {
-  "name": "croak-backend",
+  "name": "croak-express-ready",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
