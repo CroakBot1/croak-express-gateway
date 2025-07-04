@@ -1,36 +1,51 @@
-// index.js
-
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const dotenv = require('dotenv');
+const { WebSocketClient, RestClientV5 } = require('bybit-api');
 
-const { RestClientV5 } = require('bybit-api'); // ✅ Correct constructor
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-const client = new RestClientV5({               // ✅ Instantiate properly
-  key: process.env.BYBIT_API_KEY,
-  secret: process.env.BYBIT_API_SECRET
-});
-
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
-app.get('/', (req, res) => {
-  res.send('Croak Gateway Alive 🐸');
+// === BYBIT V5 CLIENT ===
+const client = new RestClientV5({
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET,
+  testnet: false,
 });
 
-app.post('/execute-trade', async (req, res) => {
+// === TEST ENDPOINT ===
+app.get('/', (req, res) => {
+  res.send('🟢 Croak Gateway is Alive!');
+});
+
+// === SAMPLE TRADE DATA FETCH ===
+app.get('/price', async (req, res) => {
   try {
-    const result = await client.submitOrder(req.body); // Example call
-    res.json({ success: true, result });
+    const { result } = await client.getKline({
+      category: 'linear',
+      symbol: 'ETHUSDT',
+      interval: '1',
+      limit: 1,
+    });
+
+    const latest = result.list[0];
+    res.json({
+      timestamp: latest[0],
+      open: latest[1],
+      high: latest[2],
+      low: latest[3],
+      close: latest[4],
+    });
   } catch (err) {
-    console.error('Trade Error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error('❌ Error fetching kline:', err.message);
+    res.status(500).send('Internal Server Error');
   }
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server listening on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Croak Gateway running on PORT ${PORT}`);
 });
