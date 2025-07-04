@@ -1,35 +1,24 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { RESTClient } = require('bybit-api');
+const Bybit = require('bybit-api');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new RESTClient({
-  key: process.env.BYBIT_API_KEY,
-  secret: process.env.BYBIT_API_SECRET,
-  testnet: false
+const client = new Bybit({
+  key: process.env.API_KEY,
+  secret: process.env.API_SECRET,
+  testnet: true,
 });
 
-app.get('/fetch-balance', async (req, res) => {
+app.get('/balance', async (req, res) => {
   try {
-    const result = await client.getWalletBalance('UNIFIED');
+    const result = await client.getWalletBalance();
     res.json(result);
-  } catch (err) {
-    console.error('❌ Error fetching balance:', err);
+  } catch (error) {
     res.status(500).json({ error: 'Failed to fetch balance' });
-  }
-});
-
-app.get('/fetch-positions', async (req, res) => {
-  try {
-    const result = await client.getPositionInfo();
-    res.json(result);
-  } catch (err) {
-    console.error('❌ Error fetching positions:', err);
-    res.status(500).json({ error: 'Failed to fetch positions' });
   }
 });
 
