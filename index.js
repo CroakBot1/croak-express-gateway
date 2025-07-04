@@ -1,53 +1,58 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const axios = require('axios');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-
 app.use(cors());
 app.use(bodyParser.json());
 
-app.get('/', (req, res) => {
-  res.send('✅ Croak Bot Backend is Live!');
-});
+const BASE_URL = 'https://api.bybit.com'; // Live Bybit Mainnet
 
-app.get('/fetch-balance', async (req, res) => {
-  try {
-    // Replace this with actual fetch logic if needed
-    return res.json({ usdt: 981 });
-  } catch (err) {
-    console.error('Balance error:', err.message);
-    return res.status(500).json({ error: 'Balance fetch failed' });
-  }
-});
-
-app.get('/fetch-positions', async (req, res) => {
-  try {
-    // Replace this with actual positions logic if needed
-    return res.json([
-      { symbol: 'ETHUSDT', size: 0.1, side: 'Buy', entry: 2960 }
-    ]);
-  } catch (err) {
-    console.error('Position error:', err.message);
-    return res.status(500).json({ error: 'Positions fetch failed' });
-  }
-});
+function generateSignature(params, apiSecret) {
+  const sortedKeys = Object.keys(params).sort();
+  const query = sortedKeys.map(key => `${key}=${params[key]}`).join('&');
+  return crypto.createHmac('sha256', apiSecret).update(query).digest('hex');
+}
 
 app.post('/place-order', async (req, res) => {
-  try {
-    const { side, qty, tp, sl } = req.body;
-    console.log(`Order received: ${side} ${qty}ETH TP:${tp} SL:${sl}`);
+  const { side, qty, tp, sl, symbol = 'ETHUSDT' } = req.body;
+  const apiKey = process.env.BYBIT_API_KEY;
+  const apiSecret = process.env.BYBIT_API_SECRET;
+  const timestamp = Date.now();
 
-    // Simulated order execution result
-    return res.json({ message: 'Order placed successfully', success: true });
-  } catch (err) {
-    console.error('Order error:', err.message);
-    return res.status(500).json({ error: 'Order failed' });
+  const params = {
+    category: 'linear',
+    symbol,
+    side,
+    orderType: 'Market',
+    qty,
+    timeInForce: 'GoodTillCancel',
+    takeProfit: tp,
+    stopLoss: sl,
+    apiKey,
+    recvWindow: 5000,
+    timestamp
+  };
+
+  const sign = generateSignature(params, apiSecret);
+  const queryParams = { ...params, sign };
+
+  try {
+    const response = await axios.post(`${BASE_URL}/v5/order/create`, null, {
+      params: queryParams,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({
+      message: '❌ Order failed',
+      error: error.response?.data || error.message
+    });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Croak Bot Backend running on port ${PORT}`);
-});
+app.listen(3000, () => console.log('✅ Croak Backend Live on PORT 3000'));
