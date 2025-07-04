@@ -1,17 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { BybitApiClient } = require('bybit-api');
+const { RestClientV5 } = require('bybit-api');
 
 dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new BybitApiClient({
-  apiKey: process.env.BYBIT_API_KEY,
-  apiSecret: process.env.BYBIT_API_SECRET,
-  testnet: true
+const client = new RestClientV5({
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET,
+  testnet: true,
 });
 
 app.get('/', (req, res) => res.send('✅ Croak API Live'));
@@ -22,6 +22,7 @@ app.get('/fetch-balance', async (req, res) => {
     const usdt = result.result.list[0].coin.find(c => c.coin === 'USDT')?.availableToWithdraw || 0;
     res.json({ usdt });
   } catch (err) {
+    console.error('Balance Error:', err);
     res.status(500).json({ error: 'Failed to fetch balance' });
   }
 });
