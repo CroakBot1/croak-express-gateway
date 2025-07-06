@@ -1,63 +1,58 @@
-// == FULL FIX BACKEND (HARDCODED TESTING) 🧠🐸 ==
-const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
-const cors = require('cors');
-
+const express = require('express');
 const app = express();
-app.use(cors()); // ✅ Enable CORS
 app.use(express.json());
 
-// 🔐 HARDCODED KEYS for testing (Replace with .env later)
+// Hardcoded valid key + secret for testing
 const BYBIT_API_KEY = '4V7w7VSkgk8qVJ5YTq';
 const BYBIT_SECRET = 'lYW7O9GGisZyBWouw1hNgNGtQuV3vMfcieFZ';
 
-// ✅ Main Order Endpoint
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Fix CORS
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
 app.post('/place-order', async (req, res) => {
   try {
     const { symbol, side, qty } = req.body;
     const timestamp = Date.now().toString();
+    const recvWindow = 5000;
 
     const paramsObj = {
-      api_key: BYBIT_API_KEY,
+      apiKey: BYBIT_API_KEY,
       symbol,
       side,
       qty,
-      timestamp
+      timestamp,
+      recvWindow
     };
 
-    const paramStr = Object.keys(paramsObj)
-      .sort()
-      .map(key => `${key}=${paramsObj[key]}`)
+    const orderedParams = Object.entries(paramsObj)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
       .join('&');
 
-    const signature = crypto
-      .createHmac('sha256', BYBIT_SECRET)
-      .update(paramStr)
+    const signature = crypto.createHmac('sha256', BYBIT_SECRET)
+      .update(orderedParams)
       .digest('hex');
 
-    const fullParams = {
-      ...paramsObj,
-      sign: signature
+    const headers = {
+      'Content-Type': 'application/json'
     };
 
     const response = await axios.post(
-      'https://api.bybit.com/v5/order/create',
-      fullParams
+      'https://api-testnet.bybit.com/v5/order/create',
+      { ...paramsObj, sign: signature },
+      { headers }
     );
 
     res.json(response.data);
   } catch (err) {
     console.error('❌ Order Error:', err?.response?.data || err.message);
-    res.status(500).json({
-      error: 'Order failed',
-      details: err?.response?.data || err.message
-    });
+    res.status(500).json({ error: 'Order failed', details: err.message });
   }
 });
 
-// ✅ Start Server
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+app.listen(10000, () => console.log('🚀 Server running on port 10000'));
