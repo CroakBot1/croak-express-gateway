@@ -1,29 +1,30 @@
 const express = require('express');
-const cors = require('cors');
 const fetch = require('node-fetch');
+const cors = require('cors');
 const crypto = require('crypto');
+require('dotenv').config();
 
 const app = express();
-app.use(cors()); // ✅ Fixes CORS for all origins
+app.use(cors());
 app.use(express.json());
 
-const API_KEY = process.env.API_KEY || '4V7w7VSkgk8qVJ5YTq';
-const API_SECRET = process.env.API_SECRET || 'lYW7O9GGisZyBWouw1hNgNGtQuV3vMfcieFZ';
+const PORT = process.env.PORT || 10000;
 
+// 🔐 Signature Generator
+function generateSignature(secret, params) {
+  const orderedParams = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+  return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
+}
+
+// 🚀 Trade Order Endpoint
 app.post('/place-order', async (req, res) => {
-  const {
-    category,
-    symbol,
-    side,
-    orderType,
-    qty,
-    takeProfit,
-    stopLoss,
-    timeInForce,
-    license
-  } = req.body;
+  const { category, symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce } = req.body;
 
   const timestamp = Date.now().toString();
+  const recvWindow = "5000";
 
   const params = {
     category,
@@ -33,36 +34,34 @@ app.post('/place-order', async (req, res) => {
     qty,
     takeProfit,
     stopLoss,
-    timeInForce
+    timeInForce,
+    apiKey: process.env.API_KEY,
+    timestamp,
+    recvWindow,
   };
 
-  const query = Object.entries(params)
-    .filter(([_, v]) => v !== undefined)
-    .map(([k, v]) => `${k}=${v}`)
-    .join('&');
-
-  const signature = crypto
-    .createHmac('sha256', API_SECRET)
-    .update(`${timestamp}${API_KEY}${query}`)
-    .digest('hex');
+  const signature = generateSignature(process.env.API_SECRET, params);
+  const url = 'https://api.bybit.com/v5/order/create';
 
   try {
-    const result = await fetch('https://api.bybit.com/v5/order/create', {
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'X-BYBIT-API-KEY': API_KEY,
-        'X-BYBIT-API-SIGN': signature,
-        'X-BYBIT-API-TIMESTAMP': timestamp,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(params)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...params,
+        sign: signature
+      })
     });
 
-    const data = await result.json();
+    const data = await response.json();
+    console.log("✅ Order Response:", data);
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Trade failed', details: err.message });
+    console.error("❌ Order Error:", err);
+    res.status(500).json({ error: "Order failed", detail: err.message });
   }
 });
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
