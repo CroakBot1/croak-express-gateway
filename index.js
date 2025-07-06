@@ -1,7 +1,10 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const express = require('express');
+const cors = require('cors'); // 👈 Add this
+
 const app = express();
+app.use(cors()); // 👈 Enable CORS (allow all origins for now)
 app.use(express.json());
 
 // Secret keys dapat naka .env or secure config
@@ -12,7 +15,7 @@ app.post('/place-order', async (req, res) => {
   try {
     const { symbol, side, qty } = req.body;
     const timestamp = Date.now().toString();
-    
+
     const params = `api_key=${BYBIT_API_KEY}&symbol=${symbol}&side=${side}&qty=${qty}&timestamp=${timestamp}`;
     const signature = crypto.createHmac('sha256', BYBIT_SECRET).update(params).digest('hex');
 
@@ -24,7 +27,7 @@ app.post('/place-order', async (req, res) => {
     };
 
     const response = await axios.post(
-      'https://api.bybit.com/v5/order/create', 
+      'https://api.bybit.com/v5/order/create',
       {
         symbol,
         side,
