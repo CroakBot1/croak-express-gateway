@@ -1,15 +1,15 @@
 {
   "name": "croak-express-gateway",
   "version": "1.0.0",
-  "description": "Bybit trading proxy with CORS enabled",
+  "description": "Croak Bot backend gateway",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
+    "axios": "^1.6.0",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "node-fetch": "^2.6.7",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "express": "^4.18.2"
   }
 }
