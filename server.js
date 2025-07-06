@@ -1,63 +1,68 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
+const cors = require('cors');
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 
 const app = express();
-const port = 10000;
+app.use(cors()); // ✅ Fixes CORS for all origins
+app.use(express.json());
 
-app.use(bodyParser.json());
-
-const API_KEY = '4V7w7VSkgk8qVJ5YTq';
-const API_SECRET = 'lYW7O9GGisZyBWouw1hNgNGtQuV3vMfcieFZ';
-
-function genSignature(query, timestamp) {
-  return crypto
-    .createHmac('sha256', API_SECRET)
-    .update(`${timestamp}${API_KEY}10000${query}`)
-    .digest('hex');
-}
+const API_KEY = process.env.API_KEY || '4V7w7VSkgk8qVJ5YTq';
+const API_SECRET = process.env.API_SECRET || 'lYW7O9GGisZyBWouw1hNgNGtQuV3vMfcieFZ';
 
 app.post('/place-order', async (req, res) => {
-  const order = req.body;
+  const {
+    category,
+    symbol,
+    side,
+    orderType,
+    qty,
+    takeProfit,
+    stopLoss,
+    timeInForce,
+    license
+  } = req.body;
 
-  const url = 'https://api.bybit.com/v5/order/create';
   const timestamp = Date.now().toString();
 
-  const payload = {
-    category: order.category,
-    symbol: order.symbol,
-    side: order.side,
-    orderType: order.orderType,
-    qty: order.qty,
-    takeProfit: order.takeProfit,
-    stopLoss: order.stopLoss,
-    timeInForce: order.timeInForce
+  const params = {
+    category,
+    symbol,
+    side,
+    orderType,
+    qty,
+    takeProfit,
+    stopLoss,
+    timeInForce
   };
 
-  const query = new URLSearchParams(payload).toString();
-  const signature = genSignature(query, timestamp);
+  const query = Object.entries(params)
+    .filter(([_, v]) => v !== undefined)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('&');
+
+  const signature = crypto
+    .createHmac('sha256', API_SECRET)
+    .update(`${timestamp}${API_KEY}${query}`)
+    .digest('hex');
 
   try {
-    const response = await fetch(url, {
+    const result = await fetch('https://api.bybit.com/v5/order/create', {
       method: 'POST',
       headers: {
-        'X-BAPI-API-KEY': API_KEY,
-        'X-BAPI-TIMESTAMP': timestamp,
-        'X-BAPI-RECV-WINDOW': '10000',
-        'X-BAPI-SIGN': signature,
+        'X-BYBIT-API-KEY': API_KEY,
+        'X-BYBIT-API-SIGN': signature,
+        'X-BYBIT-API-TIMESTAMP': timestamp,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(params)
     });
 
-    const result = await response.json();
-    res.json(result);
+    const data = await result.json();
+    res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.toString() });
+    res.status(500).json({ error: 'Trade failed', details: err.message });
   }
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
-});
+module.exports = app;
