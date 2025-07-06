@@ -1,55 +1,75 @@
-// == BACKEND: BUY ORDER ROUTE ==
 const express = require("express");
-const crypto = require("crypto");
 const axios = require("axios");
+const cors = require("cors");
+const crypto = require("crypto");
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("🚀 Croak Gateway Live!");
+});
+
 app.post("/place-order", async (req, res) => {
-  const {
-    apiKey,
-    apiSecret,
-    symbol,
-    side,
-    orderType,
-    qty,
-    price,
-    timeInForce,
-  } = req.body;
-
-  const timestamp = Date.now().toString();
-
-  const query = `apiKey=${apiKey}&orderType=${orderType}&price=${price}&qty=${qty}&side=${side}&symbol=${symbol}&timeInForce=${timeInForce}&timestamp=${timestamp}`;
-  const signature = crypto.createHmac("sha256", apiSecret).update(query).digest("hex");
-
   try {
+    const {
+      apiKey,
+      apiSecret,
+      symbol,
+      side,
+      orderType,
+      qty,
+      price,
+      timeInForce
+    } = req.body;
+
+    const timestamp = Date.now().toString();
+    const recvWindow = "5000";
+
+    let params = {
+      category: "linear",
+      symbol,
+      side,
+      orderType,
+      qty,
+      timeInForce,
+      price,
+    };
+
+    const paramStr = Object.entries(params)
+      .map(([key, val]) => `${key}=${val}`)
+      .join("&");
+
+    const signaturePayload = `${timestamp}${apiKey}${recvWindow}${paramStr}`;
+    const signature = crypto
+      .createHmac("sha256", apiSecret)
+      .update(signaturePayload)
+      .digest("hex");
+
     const response = await axios.post(
       "https://api.bybit.com/v5/order/create",
-      {
-        category: "linear",
-        symbol,
-        side,
-        orderType,
-        qty,
-        price,
-        timeInForce,
-      },
+      params,
       {
         headers: {
-          "X-BYBIT-API-KEY": 4V7w7VSkgk8qVJ5YTq,
-          "X-BYBIT-API-SIGN": lYW7O9GGisZyBWouw1hNgNGtQuV3vMfcieFZ,
+          "X-BYBIT-API-KEY": apiKey,
+          "X-BYBIT-API-SIGN": signature,
           "X-BYBIT-API-TIMESTAMP": timestamp,
-          "X-BYBIT-API-RECV-WINDOW": "5000",
+          "X-BYBIT-API-RECV-WINDOW": recvWindow,
           "Content-Type": "application/json",
         },
       }
     );
 
-    res.json({ success: true, result: response.data });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.response?.data || err.message });
+    res.json(response.data);
+  } catch (error) {
+    console.error("❌ Order Error:", error?.response?.data || error.message);
+    res.status(500).json({
+      error: "Order failed",
+      details: error?.response?.data || error.message,
+    });
   }
 });
 
