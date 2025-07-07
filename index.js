@@ -2,28 +2,33 @@ const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
 const crypto = require('crypto');
-require('dotenv').config();
+require('dotenv').config(); // Load .env
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
-const API_KEY = process.env.BYBIT_API_KEY || 'mzHAXKsKNc6TpJK9D3';
-const API_SECRET = process.env.BYBIT_API_SECRET || 'pQKjiFJPHwUbfBFggJcp5lRUOc3ggf14cZKs';
+const API_KEY = process.env.BYBIT_API_KEY;
+const API_SECRET = process.env.BYBIT_API_SECRET;
+
+if (!API_KEY || !API_SECRET) {
+  console.error("❌ Missing API Key or Secret. Check your .env file or Render environment settings.");
+  process.exit(1);
+}
 
 // 🔐 Signature Generator
-function sign(secret, params) {
+function generateSignature(secret, params) {
   const ordered = Object.keys(params)
     .sort()
-    .map((key) => `${key}=${params[key]}`)
+    .map(k => `${k}=${params[k]}`)
     .join('&');
   return crypto.createHmac('sha256', secret).update(ordered).digest('hex');
 }
 
-// 🚀 Trade Order Endpoint
+// 🟢 Order Endpoint
 app.post('/place-order', async (req, res) => {
-  const { category = 'linear', symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = 'IOC' } = req.body;
+  const { symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = "IOC", category = "linear" } = req.body;
 
   const timestamp = Date.now().toString();
   const recvWindow = "5000";
@@ -39,35 +44,33 @@ app.post('/place-order', async (req, res) => {
     takeProfit,
     stopLoss,
     timestamp,
-    recvWindow,
+    recvWindow
   };
 
-  // Remove empty
-  Object.keys(params).forEach((k) => {
-    if (params[k] === undefined || params[k] === null || params[k] === '') {
-      delete params[k];
-    }
+  // Remove empty fields
+  Object.keys(params).forEach(key => {
+    if (params[key] === undefined || params[key] === null) delete params[key];
   });
 
-  const signature = sign(API_SECRET, params);
+  const signature = generateSignature(API_SECRET, params);
   const url = 'https://api-testnet.bybit.com/v5/order/create';
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, sign: signature }),
+      body: JSON.stringify({ ...params, sign: signature })
     });
 
     const data = await response.json();
-    console.log('✅ ORDER RESPONSE:', data);
+    console.log("✅ ORDER RESPONSE:", data);
     res.json(data);
   } catch (error) {
-    console.error('❌ ORDER ERROR:', error);
-    res.status(500).json({ error: 'Order failed', detail: error.message });
+    console.error("❌ ORDER ERROR:", error);
+    res.status(500).json({ error: "Order failed", detail: error.message });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Croak Gateway running on port ${PORT}`);
+  console.log(`🚀 Croak Gateway live on port ${PORT}`);
 });
