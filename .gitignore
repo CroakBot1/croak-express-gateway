@@ -1,3 +1,3 @@
-git add package.json
-git commit -m "🛠️ Add package.json with axios, express, cors"
+git add index.js package.json
+git commit -m "🚀 Full fix: bybit trade gateway working"
 git push
