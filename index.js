@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ HARDCODED WORKING VALUES
+// ✅ HARDCODED CONFIG
 const API_KEY = 'Dpej60QT5fbbPSi5CK';
 const API_SECRET = 'aKHo0yLqiYqXnkYhQDOdGhG2kJnogEh4vSeo';
 const ORDER_URL = 'https://api-testnet.bybit.com/v5/order/create';
@@ -32,29 +32,38 @@ app.post('/place-order', async (req, res) => {
 
   const params = {
     category, symbol, side, orderType,
-    qty, takeProfit, stopLoss, timeInForce,
-    apiKey: API_KEY,
+    qty, takeProfit, stopLoss, timeInForce
+  };
+
+  const baseParams = {
+    ...params,
     timestamp,
     recvWindow
   };
 
-  const signature = generateSignature(API_SECRET, params);
-  const payload = { ...params, sign: signature };
-
-  console.log('📤 Final Payload Sent to BYBIT:', payload);
+  const signature = generateSignature(API_SECRET, {
+    ...baseParams,
+    apiKey: API_KEY
+  });
 
   try {
     const response = await fetch(ORDER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json',
+        'X-BYBIT-API-KEY': API_KEY
+      },
+      body: JSON.stringify({
+        ...baseParams,
+        sign: signature
+      })
     });
 
     const data = await response.json();
     console.log('✅ Order Response:', data);
     res.json(data);
   } catch (err) {
-    console.error('❌ Error placing order:', err);
+    console.error('❌ Order error:', err);
     res.status(500).json({ error: 'Order failed', detail: err.message });
   }
 });
