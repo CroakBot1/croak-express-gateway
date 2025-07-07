@@ -7,13 +7,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ HARD-CODED KEYS & CONFIG
 const API_KEY = 'Dpej60QT5fbbPSi5CK';
 const API_SECRET = 'aKHo0yLqiYqXnkYhQDOdGhG2kJnogEh4vSeo';
 const ORDER_URL = 'https://api-testnet.bybit.com/v5/order/create';
 const PORT = 10000;
 
-// ✅ SIGNATURE GENERATOR
 function generateSignature(secret, params) {
   const orderedParams = Object.keys(params)
     .sort()
@@ -22,7 +20,6 @@ function generateSignature(secret, params) {
   return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
 }
 
-// ✅ MAIN ORDER ROUTE
 app.post('/place-order', async (req, res) => {
   const {
     category,
@@ -38,7 +35,7 @@ app.post('/place-order', async (req, res) => {
   const timestamp = Date.now().toString();
   const recvWindow = '5000';
 
-  const params = {
+  const baseParams = {
     category,
     symbol,
     side,
@@ -46,19 +43,26 @@ app.post('/place-order', async (req, res) => {
     qty,
     takeProfit,
     stopLoss,
-    timeInForce,
+    timeInForce
+  };
+
+  const paramsWithAuth = {
+    ...baseParams,
     apiKey: API_KEY,
     timestamp,
     recvWindow
   };
 
-  const signature = generateSignature(API_SECRET, params);
+  const signature = generateSignature(API_SECRET, paramsWithAuth);
 
   try {
     const response = await fetch(ORDER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, sign: signature })
+      body: JSON.stringify({
+        ...paramsWithAuth,
+        sign: signature
+      })
     });
 
     const data = await response.json();
@@ -70,7 +74,6 @@ app.post('/place-order', async (req, res) => {
   }
 });
 
-// ✅ START SERVER
 app.listen(PORT, () => {
   console.log(`🚀 Croak Express Gateway live on port ${PORT}`);
 });
