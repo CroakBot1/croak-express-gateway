@@ -7,6 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ HARDCODED WORKING VALUES
 const API_KEY = 'Dpej60QT5fbbPSi5CK';
 const API_SECRET = 'aKHo0yLqiYqXnkYhQDOdGhG2kJnogEh4vSeo';
 const ORDER_URL = 'https://api-testnet.bybit.com/v5/order/create';
@@ -19,8 +20,6 @@ function generateSignature(secret, params) {
     .join('&');
   return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
 }
-
-app.get('/ping', (req, res) => res.send('✅ Backend is LIVE with hardcoded API key'));
 
 app.post('/place-order', async (req, res) => {
   const {
@@ -42,11 +41,7 @@ app.post('/place-order', async (req, res) => {
   const signature = generateSignature(API_SECRET, params);
   const payload = { ...params, sign: signature };
 
-  // ✅ DEBUG LOGGING
-  console.log('🧩 API_KEY:', API_KEY);
-  console.log('🧩 Params:', params);
-  console.log('🧩 Signature:', signature);
-  console.log('📤 Final Payload:', payload);
+  console.log('📤 Final Payload Sent to BYBIT:', payload);
 
   try {
     const response = await fetch(ORDER_URL, {
