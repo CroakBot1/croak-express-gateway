@@ -9,6 +9,8 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
+const API_KEY = process.env.BYBIT_API_KEY;
+const API_SECRET = process.env.BYBIT_API_SECRET;
 
 // 🔐 Signature Generator
 function generateSignature(secret, params) {
@@ -19,9 +21,9 @@ function generateSignature(secret, params) {
   return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
 }
 
-// 🚀 Trade Order Endpoint
+// 🚀 Place Order Endpoint
 app.post('/place-order', async (req, res) => {
-  const { category, symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce } = req.body;
+  const { category, symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = "IOC" } = req.body;
 
   const timestamp = Date.now().toString();
   const recvWindow = "5000";
@@ -35,22 +37,24 @@ app.post('/place-order', async (req, res) => {
     takeProfit,
     stopLoss,
     timeInForce,
-    apiKey: process.env.BYBIT_API_KEY,
+    apiKey: API_KEY,
     timestamp,
     recvWindow,
   };
 
-  const signature = generateSignature(process.env.BYBIT_API_SECRET, params);
-  const url = 'https://api-testnet.bybit.com/v5/order/create'; // ✅ Testnet for now
+  // Remove empty params
+  Object.keys(params).forEach(key => {
+    if (!params[key]) delete params[key];
+  });
+
+  const signature = generateSignature(API_SECRET, params);
+  const url = 'https://api-testnet.bybit.com/v5/order/create';
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...params,
-        sign: signature
-      })
+      body: JSON.stringify({ ...params, sign: signature })
     });
 
     const data = await response.json();
@@ -63,5 +67,6 @@ app.post('/place-order', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Croak Gateway running on port ${PORT}`);
+  console.log(`🔑 Using API_KEY: ${API_KEY ? '✅ Loaded' : '❌ MISSING'}`);
 });
