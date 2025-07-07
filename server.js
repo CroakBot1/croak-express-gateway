@@ -41,7 +41,8 @@ app.post('/place-order', async (req, res) => {
   };
 
   const signature = generateSignature(process.env.API_SECRET, params);
-  const url = 'https://api.bybit.com/v5/order/create';
+  const API_1M = 'https://api-testnet.bybit.com/v5/market/kline?category=linear&symbol=ETHUSDT&interval=1&limit=100';
+
 
   try {
     const response = await fetch(url, {
