@@ -20,6 +20,8 @@ function generateSignature(secret, params) {
   return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
 }
 
+app.get('/ping', (req, res) => res.send('✅ Backend is LIVE with hardcoded API key'));
+
 app.post('/place-order', async (req, res) => {
   const {
     category, symbol, side, orderType,
@@ -40,6 +42,10 @@ app.post('/place-order', async (req, res) => {
   const signature = generateSignature(API_SECRET, params);
   const payload = { ...params, sign: signature };
 
+  // ✅ DEBUG LOGGING
+  console.log('🧩 API_KEY:', API_KEY);
+  console.log('🧩 Params:', params);
+  console.log('🧩 Signature:', signature);
   console.log('📤 Final Payload:', payload);
 
   try {
