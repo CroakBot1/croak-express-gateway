@@ -46,6 +46,7 @@ app.post('/place-order', async (req, res) => {
     timeInForce
   };
 
+  // Include API key & timestamp in signature params
   const paramsWithAuth = {
     ...baseParams,
     apiKey: API_KEY,
@@ -55,14 +56,18 @@ app.post('/place-order', async (req, res) => {
 
   const signature = generateSignature(API_SECRET, paramsWithAuth);
 
+  const fullPayload = {
+    ...paramsWithAuth,
+    sign: signature
+  };
+
+  console.log('📤 Final Payload Sent:', fullPayload); // Debug line
+
   try {
     const response = await fetch(ORDER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...paramsWithAuth,
-        sign: signature
-      })
+      body: JSON.stringify(fullPayload)
     });
 
     const data = await response.json();
