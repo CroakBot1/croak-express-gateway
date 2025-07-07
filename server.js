@@ -35,14 +35,13 @@ app.post('/place-order', async (req, res) => {
     takeProfit,
     stopLoss,
     timeInForce,
-    apiKey: process.env.API_KEY,
+    api_key: process.env.API_KEY, // ✅ CORRECT PARAM NAME
     timestamp,
     recvWindow,
   };
 
   const signature = generateSignature(process.env.API_SECRET, params);
-  const API_1M = 'https://api-testnet.bybit.com/v5/market/kline?category=linear&symbol=ETHUSDT&interval=1&limit=100';
-
+  const url = 'https://api-testnet.bybit.com/v5/order/create'; // ✅ Define the URL
 
   try {
     const response = await fetch(url, {
