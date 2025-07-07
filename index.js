@@ -22,59 +22,38 @@ function generateSignature(secret, params) {
 
 app.post('/place-order', async (req, res) => {
   const {
-    category,
-    symbol,
-    side,
-    orderType,
-    qty,
-    takeProfit,
-    stopLoss,
-    timeInForce
+    category, symbol, side, orderType,
+    qty, takeProfit, stopLoss, timeInForce
   } = req.body;
 
   const timestamp = Date.now().toString();
   const recvWindow = '5000';
 
-  const baseParams = {
-    category,
-    symbol,
-    side,
-    orderType,
-    qty,
-    takeProfit,
-    stopLoss,
-    timeInForce
-  };
-
-  // Include API key & timestamp in signature params
-  const paramsWithAuth = {
-    ...baseParams,
+  const params = {
+    category, symbol, side, orderType,
+    qty, takeProfit, stopLoss, timeInForce,
     apiKey: API_KEY,
     timestamp,
     recvWindow
   };
 
-  const signature = generateSignature(API_SECRET, paramsWithAuth);
+  const signature = generateSignature(API_SECRET, params);
+  const payload = { ...params, sign: signature };
 
-  const fullPayload = {
-    ...paramsWithAuth,
-    sign: signature
-  };
-
-  console.log('📤 Final Payload Sent:', fullPayload); // Debug line
+  console.log('📤 Final Payload:', payload);
 
   try {
     const response = await fetch(ORDER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fullPayload)
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
     console.log('✅ Order Response:', data);
     res.json(data);
   } catch (err) {
-    console.error('❌ Order Error:', err);
+    console.error('❌ Error placing order:', err);
     res.status(500).json({ error: 'Order failed', detail: err.message });
   }
 });
