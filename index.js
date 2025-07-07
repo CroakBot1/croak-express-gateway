@@ -9,45 +9,43 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 10000;
-const API_KEY = process.env.BYBIT_API_KEY;
-const API_SECRET = process.env.BYBIT_API_SECRET;
+const API_KEY = process.env.BYBIT_API_KEY || 'mzHAXKsKNc6TpJK9D3';
+const API_SECRET = process.env.BYBIT_API_SECRET || 'pQKjiFJPHwUbfBFggJcp5lRUOc3ggf14cZKs';
 
 // 🔐 Signature Generator
-function generateSignature(secret, params) {
-  const orderedParams = Object.keys(params)
-    .sort()
-    .map((key) => `${key}=${params[key]}`)
-    .join('&');
-  return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
+function sign(secret, params) {
+  const ordered = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&');
+  return crypto.createHmac('sha256', secret).update(ordered).digest('hex');
 }
 
-// 🚀 Place Order Endpoint
+// 🟢 Place Order Endpoint
 app.post('/place-order', async (req, res) => {
-  const { category, symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = "IOC" } = req.body;
-
+  const { symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = "IOC", category = "linear" } = req.body;
   const timestamp = Date.now().toString();
   const recvWindow = "5000";
 
   const params = {
+    apiKey: API_KEY,
     category,
     symbol,
     side,
     orderType,
     qty,
+    timeInForce,
     takeProfit,
     stopLoss,
-    timeInForce,
-    apiKey: API_KEY,
     timestamp,
-    recvWindow,
+    recvWindow
   };
 
-  // Remove empty params
+  // Remove null/undefined
   Object.keys(params).forEach(key => {
-    if (!params[key]) delete params[key];
+    if (params[key] === undefined || params[key] === null) {
+      delete params[key];
+    }
   });
 
-  const signature = generateSignature(API_SECRET, params);
+  const signature = sign(API_SECRET, params);
   const url = 'https://api-testnet.bybit.com/v5/order/create';
 
   try {
@@ -58,15 +56,14 @@ app.post('/place-order', async (req, res) => {
     });
 
     const data = await response.json();
-    console.log("✅ Order Response:", data);
+    console.log("✅ ORDER RESPONSE:", data);
     res.json(data);
-  } catch (err) {
-    console.error("❌ Order Error:", err);
-    res.status(500).json({ error: "Order failed", detail: err.message });
+  } catch (error) {
+    console.error("❌ ORDER ERROR:", error);
+    res.status(500).json({ error: "Order failed", detail: error.message });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Croak Gateway running on port ${PORT}`);
-  console.log(`🔑 Using API_KEY: ${API_KEY ? '✅ Loaded' : '❌ MISSING'}`);
 });
