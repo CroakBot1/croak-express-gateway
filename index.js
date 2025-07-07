@@ -14,13 +14,17 @@ const API_SECRET = process.env.BYBIT_API_SECRET || 'pQKjiFJPHwUbfBFggJcp5lRUOc3g
 
 // 🔐 Signature Generator
 function sign(secret, params) {
-  const ordered = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&');
+  const ordered = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
   return crypto.createHmac('sha256', secret).update(ordered).digest('hex');
 }
 
-// 🟢 Place Order Endpoint
+// 🚀 Trade Order Endpoint
 app.post('/place-order', async (req, res) => {
-  const { symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = "IOC", category = "linear" } = req.body;
+  const { category = 'linear', symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = 'IOC' } = req.body;
+
   const timestamp = Date.now().toString();
   const recvWindow = "5000";
 
@@ -35,13 +39,13 @@ app.post('/place-order', async (req, res) => {
     takeProfit,
     stopLoss,
     timestamp,
-    recvWindow
+    recvWindow,
   };
 
-  // Remove null/undefined
-  Object.keys(params).forEach(key => {
-    if (params[key] === undefined || params[key] === null) {
-      delete params[key];
+  // Remove empty
+  Object.keys(params).forEach((k) => {
+    if (params[k] === undefined || params[k] === null || params[k] === '') {
+      delete params[k];
     }
   });
 
@@ -52,15 +56,15 @@ app.post('/place-order', async (req, res) => {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, sign: signature })
+      body: JSON.stringify({ ...params, sign: signature }),
     });
 
     const data = await response.json();
-    console.log("✅ ORDER RESPONSE:", data);
+    console.log('✅ ORDER RESPONSE:', data);
     res.json(data);
   } catch (error) {
-    console.error("❌ ORDER ERROR:", error);
-    res.status(500).json({ error: "Order failed", detail: error.message });
+    console.error('❌ ORDER ERROR:', error);
+    res.status(500).json({ error: 'Order failed', detail: error.message });
   }
 });
 
