@@ -34,18 +34,26 @@ app.post('/place-order', async (req, res) => {
     takeProfit,
     stopLoss,
     timeInForce,
-    apiKey: process.env.API_KEY,
     timestamp,
     recvWindow
   };
 
-  const signature = generateSignature(process.env.API_SECRET, params);
+  const signature = generateSignature(process.env.API_SECRET, {
+    ...params,
+    apiKey: process.env.API_KEY
+  });
 
   try {
     const response = await fetch(ORDER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, sign: signature })
+      headers: {
+        'Content-Type': 'application/json',
+        'X-BYBIT-API-KEY': process.env.API_KEY,
+        'X-BYBIT-SIGNATURE': signature,
+        'X-BYBIT-TIMESTAMP': timestamp,
+        'X-BYBIT-RECV-WINDOW': recvWindow
+      },
+      body: JSON.stringify(params)
     });
 
     const data = await response.json();
