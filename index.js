@@ -1,76 +1,67 @@
 const express = require('express');
-const fetch = require('node-fetch');
 const cors = require('cors');
-const crypto = require('crypto');
-require('dotenv').config(); // Load .env
+const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 10000;
+const VALID_KEYS = ['32239105688', '29672507957', '12550915154'];
+
 const API_KEY = process.env.BYBIT_API_KEY;
 const API_SECRET = process.env.BYBIT_API_SECRET;
 
-if (!API_KEY || !API_SECRET) {
-  console.error("❌ Missing API Key or Secret. Check your .env file or Render environment settings.");
-  process.exit(1);
+const crypto = require('crypto');
+
+function generateSignature(params, secret) {
+  const orderedParams = Object.keys(params).sort().map(key => `${key}=${params[key]}`).join('&');
+  return crypto.createHmac('sha256', secret).update(orderedParams).digest('hex');
 }
 
-// 🔐 Signature Generator
-function generateSignature(secret, params) {
-  const ordered = Object.keys(params)
-    .sort()
-    .map(k => `${k}=${params[k]}`)
-    .join('&');
-  return crypto.createHmac('sha256', secret).update(ordered).digest('hex');
-}
-
-// 🟢 Order Endpoint
 app.post('/place-order', async (req, res) => {
-  const { symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce = "IOC", category = "linear" } = req.body;
-
-  const timestamp = Date.now().toString();
-  const recvWindow = "5000";
-
-  const params = {
-    apiKey: API_KEY,
-    category,
-    symbol,
-    side,
-    orderType,
-    qty,
-    timeInForce,
-    takeProfit,
-    stopLoss,
-    timestamp,
-    recvWindow
-  };
-
-  // Remove empty fields
-  Object.keys(params).forEach(key => {
-    if (params[key] === undefined || params[key] === null) delete params[key];
-  });
-
-  const signature = generateSignature(API_SECRET, params);
-  const url = 'https://api-testnet.bybit.com/v5/order/create';
-
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, sign: signature })
-    });
+    const body = req.body;
+    const { license, category, symbol, side, orderType, qty, takeProfit, stopLoss, timeInForce } = body;
 
-    const data = await response.json();
-    console.log("✅ ORDER RESPONSE:", data);
-    res.json(data);
-  } catch (error) {
-    console.error("❌ ORDER ERROR:", error);
-    res.status(500).json({ error: "Order failed", detail: error.message });
+    if (!VALID_KEYS.includes(license)) {
+      return res.status(403).json({ error: 'Invalid license key' });
+    }
+
+    const timestamp = Date.now().toString();
+    const recvWindow = 5000;
+
+    const params = {
+      api_key: API_KEY,
+      timestamp,
+      recvWindow,
+      category,
+      symbol,
+      side,
+      orderType,
+      qty,
+      takeProfit,
+      stopLoss,
+      timeInForce
+    };
+
+    const sign = generateSignature(params, API_SECRET);
+    const fullParams = { ...params, sign };
+
+    const result = await axios.post(
+      'https://api-testnet.bybit.com/v5/order/create',
+      null,
+      { params: fullParams }
+    );
+
+    res.json(result.data);
+
+  } catch (err) {
+    console.error('Order error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Order failed', details: err.response?.data || err.message });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Croak Gateway live on port ${PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log('🚀 Backend running on port 3000');
 });
