@@ -1,3 +1,6 @@
+git init
 git add .
-git commit -m "✅ Final clean fix for testnet backend"
-git push
+git commit -m "🚀 Initial Croak Express Gateway"
+git branch -M main
+git remote add origin https://github.com/CroakBot1/croak-express-gateway.git
+git push -u origin main
