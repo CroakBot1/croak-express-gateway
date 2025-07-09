@@ -1,3 +1,3 @@
-git add package.json
-git commit -m "🛠️ Add dependencies for backend (helmet, cors, etc)"
+git add license.json
+git commit -m "Add license file"
 git push
