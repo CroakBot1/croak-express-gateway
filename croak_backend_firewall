@@ -1,28 +1,33 @@
-// === CROAK BOT BACKEND – GUARDIAN MODE V2 🛡️🐸 ===
+// === CROAK BOT BACKEND – GUARDIAN MODE V2 + LICENSE VALIDATION FINAL FIX 🛡️🐸 ===
 const express = require('express');
 const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// === CONFIG ===
 const SHARED_SECRET = 'croak_secret_98765';
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/your_webhook_here';
-const BLOCKED_IPS = {};
+const LICENSE_FILE = path.join(__dirname, 'license.json');
 const LOG_FILE = 'guardian_logs.json';
+const BLOCKED_IPS = {};
 
+// === MIDDLEWARE ===
 app.use(express.json());
 app.use(helmet());
 
-const limiter = rateLimit({
+app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: '⚠️ Too many requests. Slow down.'
-});
-app.use(limiter);
+}));
 
+// === UTILITIES ===
 function looksSuspicious(input) {
   return typeof input === 'string' && /<script|eval\(|SELECT|UNION|INSERT|\$\{|\*\*|=>/i.test(input);
 }
@@ -61,6 +66,17 @@ function logRequest(req, threatScore, blocked) {
   fs.appendFileSync(LOG_FILE, JSON.stringify(log) + '\n');
 }
 
+function loadLicenses() {
+  if (!fs.existsSync(LICENSE_FILE)) return {};
+  const raw = fs.readFileSync(LICENSE_FILE);
+  return JSON.parse(raw);
+}
+
+function saveLicenses(data) {
+  fs.writeFileSync(LICENSE_FILE, JSON.stringify(data, null, 2));
+}
+
+// === CROAK BOT SIGNAL EXECUTION ===
 app.post('/croak/execute', (req, res) => {
   const ip = req.ip;
   const { signal, data, licenseKey, signature } = req.body;
@@ -92,8 +108,46 @@ app.post('/croak/execute', (req, res) => {
   res.json({ success: true, message: '✅ Signal Accepted' });
 });
 
-app.get('/', (req, res) => {
-  res.send('🟢 Croak Guardian Backend is Online');
+// === LICENSE VALIDATION ===
+app.post('/croak/validate', (req, res) => {
+  const { licenseKey, clientIP } = req.body;
+  const key = String(licenseKey);
+
+  if (!key || !clientIP) {
+    return res.status(400).json({ valid: false, message: 'Missing licenseKey or clientIP' });
+  }
+
+  const licenses = loadLicenses();
+  const entry = licenses[key];
+
+  if (!entry) {
+    return res.status(404).json({ valid: false, message: 'License not found' });
+  }
+
+  if (entry.used && entry.boundIP !== clientIP) {
+    return res.status(403).json({ valid: false, message: 'License already used on another IP' });
+  }
+
+  if (!entry.used) {
+    entry.used = true;
+    entry.boundIP = clientIP;
+    licenses[key] = entry;
+    saveLicenses(licenses);
+  }
+
+  res.json({
+    valid: true,
+    message: 'License validated',
+    boundIP: entry.boundIP
+  });
 });
 
-app.listen(PORT, () => console.log(`🟢 CROAK GUARDIAN SERVER RUNNING ON PORT ${PORT}`));
+// === STATUS ===
+app.get('/', (req, res) => {
+  res.send('🟢 Croak Guardian + License Validator Backend is Online');
+});
+
+// === LAUNCH ===
+app.listen(PORT, () => {
+  console.log(`🟢 CROAK BACKEND ONLINE ON PORT ${PORT}`);
+});
