@@ -1,3 +1,3 @@
-git add index.js .env
-git commit -m "🧠 FIX: Final Bybit V5 Backend with Correct Signature + Header"
-git push origin main
+git add package.json
+git commit -m "🛠️ Add dependencies for backend (helmet, cors, etc)"
+git push
