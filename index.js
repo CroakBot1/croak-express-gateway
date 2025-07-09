@@ -1,4 +1,4 @@
-// == CROAK UUID GATEWAY BACKEND 🐸🚪 ==
+// == CROAK UUID GATEWAY 🧠🐸 ==
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
@@ -9,35 +9,24 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// 🧠 In-memory UUID database
-const uuidDB = {}; // format: { uuid: { buyer, createdAt, status } }
+const uuidStore = []; // ← Store of valid UUIDs
 
-// ✅ Generate UUID endpoint
+// === 🆕 Generate UUID ===
 app.post('/generate-uuid', (req, res) => {
-  const buyer = req.body.buyer || "unknown_user";
-  const uuid = uuidv4();
-
-  uuidDB[uuid] = {
-    uuid,
-    buyer,
-    createdAt: new Date().toISOString(),
-    status: "active"
-  };
-
-  console.log("🎯 UUID Generated:", uuid, "| Buyer:", buyer);
-  res.json({ success: true, uuid });
+  const newUUID = uuidv4();
+  uuidStore.push(newUUID);
+  console.log("✅ New UUID Generated:", newUUID);
+  res.json({ uuid: newUUID });
 });
 
-// ✅ Verify UUID endpoint (optional)
-app.post('/verify', (req, res) => {
+// === ✅ Validate UUID ===
+app.post('/validate-uuid', (req, res) => {
   const { uuid } = req.body;
-  const data = uuidDB[uuid];
-
-  if (!data) return res.json({ valid: false, message: "UUID not found" });
-
-  res.json({ valid: true, uuid, buyer: data.buyer, status: data.status });
+  const isValid = uuidStore.includes(uuid);
+  res.json({ valid: isValid });
 });
 
+// === 🏃 Start Server ===
 app.listen(PORT, () => {
   console.log(`🟢 Croak UUID Gateway running on port ${PORT}`);
 });
