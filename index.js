@@ -25,12 +25,14 @@ function saveLicenses(data) {
 
 // POST validator route
 app.post('/croak/validate', (req, res) => {
-  const { licenseKey, clientIP } = req.body;
+  let { licenseKey, clientIP } = req.body;
 
   if (!licenseKey || !clientIP) {
     return res.status(400).json({ valid: false, message: 'Missing licenseKey or clientIP' });
   }
 
+  // 🔒 Force string to avoid number mismatches
+  licenseKey = String(licenseKey).trim();
   const licenses = loadLicenses();
   const entry = licenses[licenseKey];
 
