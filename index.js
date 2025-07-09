@@ -1,86 +1,62 @@
-// == CROAK BOT LICENSE VALIDATOR – FINAL BACKEND V2 ==
+// === CROAK BOT BACKEND – GUARDIAN MODE V2 (HARDCODED LICENSE) 🛡️🐸 ===
 const express = require('express');
-const fs = require('fs');
-const cors = require('cors');
-const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
-const LICENSE_FILE = path.join(__dirname, 'license.json');
+// === CONFIG ===
+const HARDCODED_LICENSES = {
+  "32239105688": { used: false, boundIP: null },
+  "54893021785": { used: false, boundIP: null },
+};
 
-app.use(cors());
+// === MIDDLEWARE ===
 app.use(express.json());
+app.use(helmet());
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: '⚠️ Too many requests. Slow down.'
+}));
 
-// Load licenses
-function loadLicenses() {
-  if (!fs.existsSync(LICENSE_FILE)) return {};
-  try {
-    const raw = fs.readFileSync(LICENSE_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error("❌ Failed to load license file:", e);
-    return {};
-  }
-}
-
-// Save licenses
-function saveLicenses(data) {
-  try {
-    fs.writeFileSync(LICENSE_FILE, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error("❌ Failed to save license file:", e);
-  }
-}
-
-// POST: /croak/validate
+// === LICENSE VALIDATION ===
 app.post('/croak/validate', (req, res) => {
-  const rawKey = req.body.licenseKey;
-  const clientIP = req.body.clientIP;
+  const { licenseKey, clientIP } = req.body;
+  const key = String(licenseKey);
 
-  const licenseKey = String(rawKey).trim(); // 🧠 Force string + trim
-
-  console.log("🔑 License received:", licenseKey);
-  console.log("🌐 IP received:", clientIP);
-
-  if (!licenseKey || !clientIP) {
-    return res.status(400).json({ valid: false, message: "Missing licenseKey or clientIP" });
+  if (!key || !clientIP) {
+    return res.status(400).json({ valid: false, message: 'Missing licenseKey or clientIP' });
   }
 
-  const licenses = loadLicenses();
-  console.log("🧾 Loaded license keys:", Object.keys(licenses));
-
-  const entry = licenses[licenseKey];
-
+  const entry = HARDCODED_LICENSES[key];
   if (!entry) {
-    return res.status(404).json({ valid: false, message: "License not found" });
+    return res.status(404).json({ valid: false, message: 'License not found' });
   }
 
   if (entry.used && entry.boundIP !== clientIP) {
-    return res.status(403).json({ valid: false, message: "License already used on another IP" });
+    return res.status(403).json({ valid: false, message: 'License already used on another IP' });
   }
 
-  // First time use
   if (!entry.used) {
     entry.used = true;
     entry.boundIP = clientIP;
-    licenses[licenseKey] = entry;
-    saveLicenses(licenses);
-    console.log("✅ License activated:", licenseKey, "→", clientIP);
   }
 
-  return res.json({
+  res.json({
     valid: true,
-    message: "License validated",
+    message: 'License validated',
     boundIP: entry.boundIP
   });
 });
 
-// OPTIONAL GET: /croak/view (view raw licenses)
-app.get('/croak/view', (req, res) => {
-  const licenses = loadLicenses();
-  res.json(licenses);
+// === STATUS ===
+app.get('/', (req, res) => {
+  res.send('🟢 Croak Guardian Backend (Hardcoded License) is Online');
 });
 
+// === LAUNCH ===
 app.listen(PORT, () => {
-  console.log(`✅ CROAK LICENSE BACKEND ready at http://localhost:${PORT}`);
+  console.log(`🟢 CROAK BACKEND ONLINE ON PORT ${PORT}`);
 });
