@@ -1,129 +1,99 @@
-// == CROAK BACKEND FIREWALL v2 – DOMINION MODE 🧠🐸⚔️ ==
-// Full Secure Backend Skeleton + Threat Analyzer + IP Block + Signature Validator + License Check
-
+// === CROAK BOT BACKEND – GUARDIAN MODE V2 🛡️🐸 ===
 const express = require('express');
-const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const helmet = require('helmet');
-const bodyParser = require('body-parser');
-
+const rateLimit = require('express-rate-limit');
+const axios = require('axios');
+const fs = require('fs');
 const app = express();
-const PORT = process.env.PORT || 3223;
+const PORT = process.env.PORT || 3000;
 
-// === CONFIG ===
-const VALID_LICENSE_KEYS = ['32239105688', 'CROAK-MODE-ULTRA'];
-const TRUSTED_ORIGINS = ['https://croakcoin.xyz', 'http://localhost:3000'];
-const HMAC_SECRET = 'croak_secret_key_2025';
-let BLOCKED_IPS = {};
+const SHARED_SECRET = 'croak_secret_98765';
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/your_webhook_here';
+const BLOCKED_IPS = {};
+const LOG_FILE = 'guardian_logs.json';
 
-// === MIDDLEWARES ===
+app.use(express.json());
 app.use(helmet());
-app.use(bodyParser.json());
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || TRUSTED_ORIGINS.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('❌ Not allowed by CORS'));
-    }
-  }
-}));
 
-// === RATE LIMITING ===
-app.use(rateLimit({
-  windowMs: 30 * 1000,
-  max: 5,
-  message: '⛔ Too many requests – wait 30 seconds.',
-}));
-
-// === IP BLOCK FILTER ===
-app.use((req, res, next) => {
-  const ip = req.ip;
-  if (BLOCKED_IPS[ip] && Date.now() < BLOCKED_IPS[ip]) {
-    return res.status(403).json({
-      status: 'blocked',
-      reason: '⚠️ IP temporarily blocked due to suspicious activity.',
-      retryAfter: new Date(BLOCKED_IPS[ip]).toISOString(),
-    });
-  }
-  next();
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: '⚠️ Too many requests. Slow down.'
 });
+app.use(limiter);
 
-// === CLEANER ===
-function cleanInput(input) {
-  return String(input).replace(/[<>\"'`;]/g, '');
-}
-
-// === HMAC SIGNATURE CHECK ===
-function verifyHMAC(payload, signature) {
-  const hash = crypto.createHmac('sha256', HMAC_SECRET)
-    .update(JSON.stringify(payload))
-    .digest('hex');
-  return hash === signature;
-}
-
-// === SUSPICIOUS DETECTION ===
 function looksSuspicious(input) {
-  return /[`$<>{};\\]/.test(input) || /eval\\(|setTimeout\\(|Function\\(/i.test(input);
+  return typeof input === 'string' && /<script|eval\(|SELECT|UNION|INSERT|\$\{|\*\*|=>/i.test(input);
 }
 
 function analyzeThreat(req) {
   const { licenseKey, signal, data, signature } = req.body;
   let threatScore = 0;
-
   if (!licenseKey || typeof licenseKey !== 'string') threatScore += 2;
   if (!signature) threatScore += 5;
   if (looksSuspicious(signal)) threatScore += 10;
   if (typeof data === 'string' && looksSuspicious(data)) threatScore += 5;
   if (!['BUY','SELL','WAIT','TRAP'].includes(signal)) threatScore += 3;
-
   return threatScore;
 }
 
-// === MAIN EXECUTION ROUTE ===
+function isValidSignature(payload, signature) {
+  const hash = crypto.createHmac('sha256', SHARED_SECRET)
+    .update(JSON.stringify(payload)).digest('hex');
+  return signature === hash;
+}
+
+function sendDiscordAlert(msg) {
+  axios.post(DISCORD_WEBHOOK, { content: msg }).catch(console.error);
+}
+
+function logRequest(req, threatScore, blocked) {
+  const log = {
+    timestamp: new Date().toISOString(),
+    ip: req.ip,
+    signal: req.body.signal,
+    score: threatScore,
+    blocked: blocked,
+    reason: blocked ? 'Threat detected' : 'Passed'
+  };
+  console.log('📝 Log:', log);
+  fs.appendFileSync(LOG_FILE, JSON.stringify(log) + '\n');
+}
+
 app.post('/croak/execute', (req, res) => {
   const ip = req.ip;
-  const { licenseKey, signal, data, signature } = req.body;
-
+  const { signal, data, licenseKey, signature } = req.body;
   const threat = analyzeThreat(req);
-  if (threat >= 10) {
-    BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
-    console.warn(`❗ BLOCKED IP: ${ip} | Threat Score: ${threat}`);
+
+  if (!isValidSignature({ signal, data }, signature)) {
+    sendDiscordAlert(`🚨 Signature Mismatch: IP ${ip}`);
+    return res.status(403).json({ error: '❌ Invalid Signature' });
+  }
+
+  if (BLOCKED_IPS[ip] && Date.now() < BLOCKED_IPS[ip]) {
     return res.status(403).json({
-      error: '⚠️ Suspicious behavior detected. IP temporarily blocked.',
-      threatScore: threat,
+      error: '⛔ IP temporarily blocked',
       retryAfter: new Date(BLOCKED_IPS[ip]).toISOString()
     });
   }
 
-  const safeKey = cleanInput(licenseKey);
-  const safeSignal = cleanInput(signal);
-
-  if (!VALID_LICENSE_KEYS.includes(safeKey)) {
+  if (threat >= 10) {
     BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
-    return res.status(401).json({ error: '🚫 Invalid License Key – IP Blocked 24h' });
+    sendDiscordAlert(`🚨 IP Blocked: ${ip}, Threat Score: ${threat}`);
+    logRequest(req, threat, true);
+    return res.status(403).json({
+      error: '⚠️ Suspicious behavior detected.',
+      threatScore: threat
+    });
   }
 
-  if (!verifyHMAC({ signal, data }, signature)) {
-    BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
-    return res.status(403).json({ error: '❌ Invalid Signature – IP Blocked 24h' });
-  }
-
-  console.log(`[✅ CROAK SIGNAL RECEIVED]`, {
-    from: ip,
-    signal: safeSignal,
-    data
-  });
-
-  return res.json({
-    status: '✅ Signal Executed Securely',
-    signal: safeSignal,
-    action: 'Execution logged.'
-  });
+  logRequest(req, threat, false);
+  res.json({ success: true, message: '✅ Signal Accepted' });
 });
 
-// === START SERVER ===
-app.listen(PORT, () => {
-  console.log(`🚀 CROAK SERVER – DOMINION MODE running on port ${PORT}`);
+app.get('/', (req, res) => {
+  res.send('🟢 Croak Guardian Backend is Online');
 });
+
+app.listen(PORT, () => console.log(`🟢 CROAK GUARDIAN SERVER RUNNING ON PORT ${PORT}`));
