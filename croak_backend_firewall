@@ -1,5 +1,5 @@
-// == CROAK BACKEND FIREWALL v1 – BATTLE MODE 🛡️🐸 ==
-// Full Secure Backend Skeleton with License Key, Rate Limiting, HMAC Signature, CORS Lock, IP Logger, and Blocklist
+// == CROAK BACKEND FIREWALL v2 – DOMINION MODE 🧠🐸⚔️ ==
+// Full Secure Backend Skeleton + Threat Analyzer + IP Block + Signature Validator + License Check
 
 const express = require('express');
 const cors = require('cors');
@@ -11,7 +11,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3223;
 
-// === CONFIGURATION ===
+// === CONFIG ===
 const VALID_LICENSE_KEYS = ['32239105688', 'CROAK-MODE-ULTRA'];
 const TRUSTED_ORIGINS = ['https://croakcoin.xyz', 'http://localhost:3000'];
 const HMAC_SECRET = 'croak_secret_key_2025';
@@ -20,22 +20,24 @@ let BLOCKED_IPS = {};
 // === MIDDLEWARES ===
 app.use(helmet());
 app.use(bodyParser.json());
-app.use(cors({ origin: function (origin, callback) {
-  if (!origin || TRUSTED_ORIGINS.includes(origin)) {
-    callback(null, true);
-  } else {
-    callback(new Error('❌ Not allowed by CORS'));
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || TRUSTED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('❌ Not allowed by CORS'));
+    }
   }
-}}));
+}));
 
-// === RATE LIMIT ===
+// === RATE LIMITING ===
 app.use(rateLimit({
   windowMs: 30 * 1000,
   max: 5,
   message: '⛔ Too many requests – wait 30 seconds.',
 }));
 
-// === IP BLOCK CHECK ===
+// === IP BLOCK FILTER ===
 app.use((req, res, next) => {
   const ip = req.ip;
   if (BLOCKED_IPS[ip] && Date.now() < BLOCKED_IPS[ip]) {
@@ -48,12 +50,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// === SANITIZER ===
+// === CLEANER ===
 function cleanInput(input) {
-  return String(input).replace(/[<>"'`;]/g, '');
+  return String(input).replace(/[<>\"'`;]/g, '');
 }
 
-// === HMAC VERIFIER ===
+// === HMAC SIGNATURE CHECK ===
 function verifyHMAC(payload, signature) {
   const hash = crypto.createHmac('sha256', HMAC_SECRET)
     .update(JSON.stringify(payload))
@@ -61,9 +63,9 @@ function verifyHMAC(payload, signature) {
   return hash === signature;
 }
 
-// === ADVANCED ANTI-HACKING DEFENSE LAYER ===
+// === SUSPICIOUS DETECTION ===
 function looksSuspicious(input) {
-  return /[`$<>{};\\]/.test(input) || /eval\(|setTimeout\(|Function\(/i.test(input);
+  return /[`$<>{};\\]/.test(input) || /eval\\(|setTimeout\\(|Function\\(/i.test(input);
 }
 
 function analyzeThreat(req) {
@@ -79,15 +81,15 @@ function analyzeThreat(req) {
   return threatScore;
 }
 
-// === MAIN SECURE ENDPOINT ===
+// === MAIN EXECUTION ROUTE ===
 app.post('/croak/execute', (req, res) => {
   const ip = req.ip;
   const { licenseKey, signal, data, signature } = req.body;
 
-  // THREAT ANALYSIS
   const threat = analyzeThreat(req);
   if (threat >= 10) {
     BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
+    console.warn(`❗ BLOCKED IP: ${ip} | Threat Score: ${threat}`);
     return res.status(403).json({
       error: '⚠️ Suspicious behavior detected. IP temporarily blocked.',
       threatScore: threat,
@@ -95,37 +97,33 @@ app.post('/croak/execute', (req, res) => {
     });
   }
 
-  // Clean
   const safeKey = cleanInput(licenseKey);
   const safeSignal = cleanInput(signal);
 
-  // Check License
   if (!VALID_LICENSE_KEYS.includes(safeKey)) {
-    BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000; // block 24h
+    BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
     return res.status(401).json({ error: '🚫 Invalid License Key – IP Blocked 24h' });
   }
 
-  // Check Signature
   if (!verifyHMAC({ signal, data }, signature)) {
     BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
     return res.status(403).json({ error: '❌ Invalid Signature – IP Blocked 24h' });
   }
 
-  // LOG + EXECUTE
-  console.log(`[CROAK EXECUTION]`, {
+  console.log(`[✅ CROAK SIGNAL RECEIVED]`, {
     from: ip,
     signal: safeSignal,
     data
   });
 
   return res.json({
-    status: '✅ Signal Received',
+    status: '✅ Signal Executed Securely',
     signal: safeSignal,
-    action: 'Execution logged securely.',
+    action: 'Execution logged.'
   });
 });
 
 // === START SERVER ===
 app.listen(PORT, () => {
-  console.log(`🚀 CROAK BACKEND FIREWALL running on port ${PORT}`);
+  console.log(`🚀 CROAK SERVER – DOMINION MODE running on port ${PORT}`);
 });
