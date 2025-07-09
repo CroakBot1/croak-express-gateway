@@ -2,64 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🧠 Croak Status Checker</title>
+  <title>🧠 Croak Status Checker (Full UI)</title>
   <style>
-    body { font-family: monospace; background: #0f0f0f; color: #00ff88; padding: 20px; }
+    body { font-family: monospace; background: #0e0e0e; color: #00ff88; padding: 20px; }
     .status { margin: 10px 0; padding: 10px; border-left: 5px solid #00ff88; background: #111; }
     .error { border-left-color: red; color: #ff5555; }
     .ok { border-left-color: lime; color: #88ff88; }
+    input, button {
+      font-family: monospace;
+      padding: 8px;
+      margin: 5px 0;
+      background: #222;
+      color: #00ff88;
+      border: 1px solid #00ff88;
+    }
+    button:hover { cursor: pointer; background: #00ff88; color: #111; }
   </style>
 </head>
 <body>
-  <h1>🐸 CROAK STATUS CHECKER</h1>
-  <div id="ipCheck" class="status">🔍 Skipping IP fetch, using fallback...</div>
-  <div id="serverCheck" class="status">🔍 Checking Render server...</div>
-  <div id="licenseCheck" class="status">🔍 Validating test license key...</div>
+  <h1>🐸 CROAK STATUS CHECKER – FULL MODE</h1>
+
+  <div class="status" id="ipCheck">🔍 Checking IP fetch (2 sources)...</div>
+  <div class="status" id="serverCheck">🔍 Checking Render server...</div>
+  <div class="status" id="licenseCheck">🔍 Validating license key...</div>
+
+  <hr>
+  <label for="license">🔑 License Key:</label><br>
+  <input type="text" id="license" value="32239105688" placeholder="Enter license key"><br>
+  
+  <label for="override">🛠️ Dev Override Mode:</label>
+  <input type="checkbox" id="override"><br>
+
+  <button onclick="runChecks()">🔁 Retry Checks</button>
 
   <script>
-    // 1. Use fallback IP
-    const fallbackIP = "127.0.0.1";
-    document.getElementById('ipCheck').innerHTML = `✅ Using fallback IP: <b>${fallbackIP}</b>`;
-    document.getElementById('ipCheck').classList.add('ok');
+    let clientIP = "127.0.0.1";
 
-    // 2. Render Server Check
-    fetch("https://croak-express-gateway.onrender.com/")
-      .then(res => res.text())
-      .then(text => {
-        if (text.includes("Croak License Gateway")) {
-          document.getElementById('serverCheck').innerHTML = "✅ Render server is alive!";
-          document.getElementById('serverCheck').classList.add('ok');
-        } else {
-          throw new Error("Unexpected response");
+    async function fetchIP() {
+      try {
+        const res = await fetch("https://api.ipify.org/?format=json");
+        const data = await res.json();
+        clientIP = data.ip;
+        setStatus("ipCheck", `✅ IP fetched (ipify): <b>${clientIP}</b>`, "ok");
+      } catch {
+        try {
+          const fallback = await fetch("https://corsproxy.io/?https://ifconfig.me/ip");
+          const ip = await fallback.text();
+          clientIP = ip.trim();
+          setStatus("ipCheck", `✅ IP fetched (fallback): <b>${clientIP}</b>`, "ok");
+        } catch {
+          setStatus("ipCheck", `❌ Failed to fetch IP from both sources`, "error");
         }
+      }
+    }
 
-        // 3. License Key Validation
-        return fetch("https://croak-express-gateway.onrender.com/croak/validate", {
+    async function checkServer() {
+      try {
+        const res = await fetch("https://croak-express-gateway.onrender.com/");
+        const text = await res.text();
+        if (text.includes("Croak License Gateway")) {
+          setStatus("serverCheck", "✅ Render server is alive!", "ok");
+        } else throw new Error("Unexpected server response");
+      } catch {
+        setStatus("serverCheck", "❌ Cannot reach Render server (offline or blocked)", "error");
+      }
+    }
+
+    async function validateLicense() {
+      const key = document.getElementById("license").value.trim();
+      const override = document.getElementById("override").checked;
+
+      if (override) {
+        setStatus("licenseCheck", `✅ DEV OVERRIDE ACTIVE – License accepted locally.`, "ok");
+        return;
+      }
+
+      try {
+        const res = await fetch("https://croak-express-gateway.onrender.com/croak/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            licenseKey: "32239105688",
-            clientIP: fallbackIP
-          })
+          body: JSON.stringify({ licenseKey: key, clientIP })
         });
-      })
-      .then(res => res.json())
-      .then(data => {
+
+        const data = await res.json();
         if (data.valid) {
-          document.getElementById('licenseCheck').innerHTML = `✅ License VALID! Bound IP: ${data.boundIP}`;
-          document.getElementById('licenseCheck').classList.add('ok');
+          setStatus("licenseCheck", `✅ License VALID! Bound IP: ${data.boundIP}`, "ok");
         } else {
-          document.getElementById('licenseCheck').innerHTML = `❌ License invalid: ${data.message}`;
-          document.getElementById('licenseCheck').classList.add('error');
+          setStatus("licenseCheck", `❌ License INVALID: ${data.message}`, "error");
         }
-      })
-      .catch(err => {
-        console.error("❌ ERROR:", err);
-        document.getElementById('serverCheck').innerHTML = "❌ Cannot connect to Render server.";
-        document.getElementById('serverCheck').classList.add('error');
-        document.getElementById('licenseCheck').innerHTML = `❌ License validation failed: ${err.message}`;
-        document.getElementById('licenseCheck').classList.add('error');
+      } catch {
+        setStatus("licenseCheck", `⚠️ Offline mode: fallback assumed VALID (dev/local)`, "ok");
+      }
+    }
+
+    function setStatus(id, msg, type) {
+      const el = document.getElementById(id);
+      el.innerHTML = msg;
+      el.className = "status " + type;
+    }
+
+    function runChecks() {
+      setStatus("ipCheck", "🔍 Checking IP fetch...", "");
+      setStatus("serverCheck", "🔍 Checking Render server...", "");
+      setStatus("licenseCheck", "🔍 Validating license key...", "");
+      fetchIP().then(() => {
+        checkServer().then(() => {
+          validateLicense();
+        });
       });
+    }
+
+    runChecks(); // auto run on page load
   </script>
 </body>
 </html>
