@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🧠 Croak Status Checker</title>
+  <style>
+    body { font-family: monospace; background: #0f0f0f; color: #00ff88; padding: 20px; }
+    .status { margin: 10px 0; padding: 10px; border-left: 5px solid #00ff88; background: #111; }
+    .error { border-left-color: red; color: #ff5555; }
+    .ok { border-left-color: lime; color: #88ff88; }
+  </style>
+</head>
+<body>
+  <h1>🐸 CROAK STATUS CHECKER</h1>
+  <div id="ipCheck" class="status">🔍 Checking IP fetch...</div>
+  <div id="serverCheck" class="status">🔍 Checking Render server...</div>
+  <div id="licenseCheck" class="status">🔍 Validating test license key...</div>
+
+  <script>
+    // 1. IP Check
+    fetch("https://api.ipify.org?format=json")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('ipCheck').innerHTML = `✅ IP fetched: <b>${data.ip}</b>`;
+        document.getElementById('ipCheck').classList.add('ok');
+
+        // 2. Render Server Check
+        return fetch("https://croak-express-gateway.onrender.com/")
+      })
+      .then(res => res.text())
+      .then(text => {
+        if (text.includes("Croak License Gateway")) {
+          document.getElementById('serverCheck').innerHTML = "✅ Render server is alive!";
+          document.getElementById('serverCheck').classList.add('ok');
+        } else {
+          throw new Error("Unexpected response");
+        }
+
+        // 3. License Key Validation Check
+        return fetch("https://croak-express-gateway.onrender.com/croak/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            licenseKey: "32239105688",
+            clientIP: "127.0.0.1"
+          })
+        });
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.valid) {
+          document.getElementById('licenseCheck').innerHTML = `✅ License VALID! Bound IP: ${data.boundIP}`;
+          document.getElementById('licenseCheck').classList.add('ok');
+        } else {
+          document.getElementById('licenseCheck').innerHTML = `❌ License invalid: ${data.message}`;
+          document.getElementById('licenseCheck').classList.add('error');
+        }
+      })
+      .catch(err => {
+        if (err.message.includes("Failed to fetch")) {
+          document.getElementById('serverCheck').innerHTML = "❌ Cannot connect to Render server.";
+          document.getElementById('serverCheck').classList.add('error');
+        } else {
+          console.error(err);
+          document.getElementById('licenseCheck').innerHTML = `❌ Error: ${err.message}`;
+          document.getElementById('licenseCheck').classList.add('error');
+        }
+      });
+  </script>
+</body>
+</html>
