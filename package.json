@@ -1,14 +1,14 @@
 {
   "name": "croak-uuid-gateway",
   "version": "1.0.0",
-  "description": "Backend UUID generator for Croak buyers",
   "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "type": "module",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "start": "node index.js"
   }
 }
