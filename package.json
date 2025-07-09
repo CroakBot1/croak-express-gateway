@@ -1,6 +1,7 @@
 {
   "name": "croak-uuid-gateway",
   "version": "1.0.0",
+  "description": "Backend UUID generator for Croak buyers",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
