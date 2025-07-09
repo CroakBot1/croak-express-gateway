@@ -1,41 +1,53 @@
-// === BACKEND: Croak License Validator 🛡️ ===
-// Save as: backend/index.js
-
+// == LICENSE VALIDATOR BACKEND (Express) ==
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors');
-const helmet = require('helmet');
 const app = express();
-const PORT = 3000;
-
-// Load license keys from JSON
-let licenses = require('./license.json');
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(helmet());
 app.use(express.json());
 
-// ✅ Validate License Endpoint
+const LICENSE_FILE = './license.json';
+
+// Load license data
+function loadLicenses() {
+  if (!fs.existsSync(LICENSE_FILE)) return {};
+  const raw = fs.readFileSync(LICENSE_FILE);
+  return JSON.parse(raw);
+}
+
+// Save license data
+function saveLicenses(data) {
+  fs.writeFileSync(LICENSE_FILE, JSON.stringify(data, null, 2));
+}
+
 app.post('/croak/validate', (req, res) => {
-  const { licenseKey } = req.body;
-
-  if (!licenseKey || typeof licenseKey !== 'string') {
-    return res.status(400).json({ error: '❌ Invalid request format.' });
+  const { licenseKey, clientIP } = req.body;
+  if (!licenseKey || !clientIP) {
+    return res.status(400).json({ error: 'Missing licenseKey or clientIP' });
   }
 
-  if (licenses[licenseKey] && !licenses[licenseKey].used) {
-    // Optional: mark as used or bind IP
-    licenses[licenseKey].used = true;
-    fs.writeFileSync('./license.json', JSON.stringify(licenses, null, 2));
+  let licenses = loadLicenses();
+  const entry = licenses[licenseKey];
 
-    return res.json({ success: true, message: '✅ License valid' });
-  } else {
-    return res.status(403).json({ error: '❌ License invalid or already used.' });
+  if (!entry) {
+    return res.status(404).json({ valid: false, message: 'License not found' });
   }
+
+  if (entry.used && entry.boundIP !== clientIP) {
+    return res.status(403).json({ valid: false, message: 'License already used on another IP' });
+  }
+
+  // First-time use
+  if (!entry.used) {
+    entry.used = true;
+    entry.boundIP = clientIP;
+    licenses[licenseKey] = entry;
+    saveLicenses(licenses);
+  }
+
+  res.json({ valid: true, message: 'License validated', boundIP: entry.boundIP });
 });
 
-app.get('/', (req, res) => {
-  res.send('🟢 Croak License Backend Online');
-});
-
-app.listen(PORT, () => console.log(`🟢 Backend running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ License Validator running on http://localhost:${PORT}`));
