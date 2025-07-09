@@ -12,21 +12,18 @@
 </head>
 <body>
   <h1>🐸 CROAK STATUS CHECKER</h1>
-  <div id="ipCheck" class="status">🔍 Checking IP fetch...</div>
+  <div id="ipCheck" class="status">🔍 Skipping IP fetch, using fallback...</div>
   <div id="serverCheck" class="status">🔍 Checking Render server...</div>
   <div id="licenseCheck" class="status">🔍 Validating test license key...</div>
 
   <script>
-    // 1. IP Check
-    fetch("https://api.ipify.org?format=json")
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('ipCheck').innerHTML = `✅ IP fetched: <b>${data.ip}</b>`;
-        document.getElementById('ipCheck').classList.add('ok');
+    // 1. Use fallback IP
+    const fallbackIP = "127.0.0.1";
+    document.getElementById('ipCheck').innerHTML = `✅ Using fallback IP: <b>${fallbackIP}</b>`;
+    document.getElementById('ipCheck').classList.add('ok');
 
-        // 2. Render Server Check
-        return fetch("https://croak-express-gateway.onrender.com/")
-      })
+    // 2. Render Server Check
+    fetch("https://croak-express-gateway.onrender.com/")
       .then(res => res.text())
       .then(text => {
         if (text.includes("Croak License Gateway")) {
@@ -36,13 +33,13 @@
           throw new Error("Unexpected response");
         }
 
-        // 3. License Key Validation Check
+        // 3. License Key Validation
         return fetch("https://croak-express-gateway.onrender.com/croak/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             licenseKey: "32239105688",
-            clientIP: "127.0.0.1"
+            clientIP: fallbackIP
           })
         });
       })
@@ -57,14 +54,11 @@
         }
       })
       .catch(err => {
-        if (err.message.includes("Failed to fetch")) {
-          document.getElementById('serverCheck').innerHTML = "❌ Cannot connect to Render server.";
-          document.getElementById('serverCheck').classList.add('error');
-        } else {
-          console.error(err);
-          document.getElementById('licenseCheck').innerHTML = `❌ Error: ${err.message}`;
-          document.getElementById('licenseCheck').classList.add('error');
-        }
+        console.error("❌ ERROR:", err);
+        document.getElementById('serverCheck').innerHTML = "❌ Cannot connect to Render server.";
+        document.getElementById('serverCheck').classList.add('error');
+        document.getElementById('licenseCheck').innerHTML = `❌ License validation failed: ${err.message}`;
+        document.getElementById('licenseCheck').classList.add('error');
       });
   </script>
 </body>
