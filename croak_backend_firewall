@@ -1,0 +1,29 @@
+// === ADVANCED ANTI-HACKING DEFENSE LAYER ===
+function analyzeThreat(req) {
+  const { licenseKey, signal, data, signature } = req.body;
+  let threatScore = 0;
+
+  if (!licenseKey || typeof licenseKey !== 'string') threatScore += 2;
+  if (!signature) threatScore += 5;
+  if (looksSuspicious(signal)) threatScore += 10;
+  if (typeof data === 'string' && looksSuspicious(data)) threatScore += 5;
+  if (!['BUY','SELL','WAIT','TRAP'].includes(signal)) threatScore += 3;
+
+  return threatScore;
+}
+
+app.post('/croak/execute', (req, res) => {
+  const ip = req.ip;
+  const threat = analyzeThreat(req);
+
+  if (threat >= 10) {
+    BLOCKED_IPS[ip] = Date.now() + 24 * 60 * 60 * 1000;
+    return res.status(403).json({
+      error: '⚠️ Suspicious behavior detected. IP temporarily blocked.',
+      threatScore: threat,
+      retryAfter: new Date(BLOCKED_IPS[ip]).toISOString()
+    });
+  }
+
+  // ...proceed with original logic if safe
+});
