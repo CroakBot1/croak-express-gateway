@@ -1,14 +1,14 @@
 {
-  "name": "croak-auth-backend",
+  "name": "croak-express-gateway",
   "version": "1.0.0",
-  "main": "server.js",
+  "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.1"
   }
 }
