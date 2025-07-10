@@ -1,5 +1,4 @@
-// == CROAK UUID BACKEND FINAL LOCKED VERSION ==
-
+// == CROAK UUID GATEWAY – IP LOCKED VERSION ==
 const express = require('express');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
@@ -7,7 +6,6 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
-
 app.use(cors());
 app.use(express.json());
 
@@ -15,8 +13,7 @@ const DATA_FILE = 'uuids.json';
 
 function loadUUIDs() {
   try {
-    const data = fs.readFileSync(DATA_FILE);
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(DATA_FILE));
   } catch {
     return {};
   }
@@ -26,49 +23,66 @@ function saveUUIDs(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// == ROUTE: Generate new UUID ==
+// ✅ Generate UUID
 app.post('/generate-uuid', (req, res) => {
   const uuids = loadUUIDs();
-  const newUUID = uuidv4();
-  uuids[newUUID] = { ip: null, created: new Date().toISOString() };
+  const uuid = uuidv4();
+  uuids[uuid] = { firstIP: null, ips: [], created: new Date().toISOString() };
   saveUUIDs(uuids);
-  res.json({ uuid: newUUID, status: '✅ UUID generated & stored (no IP yet).' });
+  res.json({ uuid, status: '✅ UUID generated.' });
 });
 
-// == ROUTE: Validate UUID & allow one IP per UUID ==
+// 🔐 Validate UUID
 app.post('/validate-uuid', (req, res) => {
   const { uuid, clientIP } = req.body;
-  if (!uuid || !clientIP) {
-    return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
-  }
-
   const uuids = loadUUIDs();
   const data = uuids[uuid];
 
-  if (!data) {
-    return res.status(404).json({ valid: false, message: '❌ UUID not found.' });
-  }
+  if (!uuid || !clientIP) return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
+  if (!data) return res.status(404).json({ valid: false, message: '❌ UUID not found.' });
 
-  if (!data.ip) {
-    data.ip = clientIP;
+  if (!data.firstIP) {
+    data.firstIP = clientIP;
+    data.ips = [clientIP];
     uuids[uuid] = data;
     saveUUIDs(uuids);
-    return res.json({ valid: true, message: '✅ UUID validated and IP locked.' });
+    return res.json({ valid: true, message: '✅ First IP locked.' });
   }
 
-  if (data.ip === clientIP) {
-    return res.json({ valid: true, message: '✅ UUID verified.' });
+  if (clientIP === data.firstIP) {
+    return res.json({ valid: true, message: '✅ IP verified.' });
+  }
+
+  if (!data.ips.includes(clientIP)) {
+    data.ips.push(clientIP);
+    saveUUIDs(uuids);
   }
 
   return res.status(401).json({ valid: false, message: '❌ UUID is locked to a different IP.' });
 });
 
-// == DEV: See all UUIDs (REMOVE IN PRODUCTION) ==
-app.get('/dev-all', (req, res) => {
+// 🚪 Unbind UUID (only original IP allowed)
+app.post('/unbind-uuid', (req, res) => {
+  const { uuid, clientIP } = req.body;
   const uuids = loadUUIDs();
-  res.json(uuids);
+  const data = uuids[uuid];
+
+  if (!data) return res.status(404).json({ unbound: false, message: '❌ UUID not found.' });
+
+  if (clientIP === data.firstIP) {
+    data.ips = [data.firstIP];
+    saveUUIDs(uuids);
+    return res.json({ unbound: true, message: '✅ Other IPs removed. Still locked to you.' });
+  }
+
+  return res.status(403).json({ unbound: false, message: '❌ Only original IP can unbind.' });
+});
+
+// 🧪 Dev Route (optional, remove in production)
+app.get('/dev-all', (req, res) => {
+  res.json(loadUUIDs());
 });
 
 app.listen(PORT, () => {
-  console.log(`🟢 Croak UUID Gateway running on port ${PORT}`);
+  console.log(`🟢 Croak UUID Server running on port ${PORT}`);
 });
