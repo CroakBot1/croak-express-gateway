@@ -1,9 +1,10 @@
-// ✅ CROAK EXPRESS GATEWAY WITH BYBIT PRICE + UUID SYSTEM + HEARTBEAT
+// == croak-express-gateway index.js ==
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const fetch = require('node-fetch'); // 🧠 Required for price fetch
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -14,7 +15,7 @@ app.use(express.json());
 const SESSION_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
 
-// ✅ Load temp sessions
+// Load temporary session IPs
 function loadUUIDSessions() {
   try {
     return JSON.parse(fs.readFileSync(SESSION_FILE));
@@ -22,11 +23,13 @@ function loadUUIDSessions() {
     return {};
   }
 }
+
+// Save session locks
 function saveUUIDSessions(data) {
   fs.writeFileSync(SESSION_FILE, JSON.stringify(data, null, 2));
 }
 
-// ✅ Load permanent UUIDs
+// Load permanent UUIDs
 function loadValidUUIDs() {
   try {
     return JSON.parse(fs.readFileSync(VALID_UUIDS_FILE));
@@ -34,20 +37,20 @@ function loadValidUUIDs() {
     return {};
   }
 }
+
+// Save permanent UUID list
 function saveValidUUIDs(data) {
   fs.writeFileSync(VALID_UUIDS_FILE, JSON.stringify(data, null, 2));
 }
 
 let validUUIDs = loadValidUUIDs();
 
-// ✅ Validate UUID & Lock IP
+// Validate UUID and Lock IP
 app.post('/validate-uuid', (req, res) => {
   const { uuid, clientIP } = req.body;
-  if (!uuid || !clientIP)
-    return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
+  if (!uuid || !clientIP) return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
 
-  if (!validUUIDs[uuid])
-    return res.status(403).json({ valid: false, message: '❌ Invalid UUID.' });
+  if (!validUUIDs[uuid]) return res.status(403).json({ valid: false, message: '❌ Invalid UUID.' });
 
   const sessions = loadUUIDSessions();
   const session = sessions[uuid];
@@ -65,7 +68,7 @@ app.post('/validate-uuid', (req, res) => {
   return res.status(401).json({ valid: false, message: '❌ UUID already in use by another IP.' });
 });
 
-// ✅ Unbind UUID
+// Unbind UUID
 app.post('/unbind-uuid', (req, res) => {
   const { uuid, clientIP } = req.body;
   const sessions = loadUUIDSessions();
@@ -79,10 +82,10 @@ app.post('/unbind-uuid', (req, res) => {
     return res.json({ unbound: true, message: '✅ UUID unbound. Session ended.' });
   }
 
-  return res.status(403).json({ unbound: false, message: '❌ Only original IP can unbind this session.' });
+  return res.status(403).json({ unbound: false, message: '❌ Only the original IP can unbind this session.' });
 });
 
-// ✅ Generate UUID
+// Generate UUID
 app.get('/register', (req, res) => {
   const newUUID = uuidv4();
   const uuids = loadValidUUIDs();
@@ -92,24 +95,34 @@ app.get('/register', (req, res) => {
   res.json({ uuid: newUUID, message: '✅ Your personal UUID is now registered.' });
 });
 
-// ✅ NEW: Bybit Price Fetch Proxy
+// Bybit Price Proxy Endpoint (updated to v5)
 app.get('/bybit-price', async (req, res) => {
   try {
-    const response = await fetch('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
+    const response = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=ETHUSDT');
     const data = await response.json();
-    const price = parseFloat(data.result[0].last_price);
+
+    if (!data || !data.result || !data.result.list || !data.result.list[0]) {
+      return res.status(500).json({ error: 'Invalid data structure from Bybit' });
+    }
+
+    const price = parseFloat(data.result.list[0].lastPrice);
+
+    if (isNaN(price)) {
+      return res.status(500).json({ error: 'Invalid price value from Bybit' });
+    }
+
     res.json({ price });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch from Bybit', details: err.message });
   }
 });
 
-// ✅ Heartbeat to keep alive
+// Heartbeat to keep alive
 app.get('/heartbeat', (req, res) => {
   res.send('❤️ CROAK alive and listening');
 });
 
-// ✅ Start Server
+// Start Server
 app.listen(PORT, () => {
   console.log(`🟢 Croak Express Gateway running on port ${PORT}`);
 });
