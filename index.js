@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
+const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -56,18 +57,15 @@ app.post('/validate-uuid', (req, res) => {
   const session = sessions[uuid];
 
   if (!session) {
-    // No active session, allow this IP
     sessions[uuid] = { currentIP: clientIP };
     saveUUIDSessions(sessions);
     return res.json({ valid: true, message: '✅ Session started. IP locked.' });
   }
 
   if (session.currentIP === clientIP) {
-    // Same IP reconnected
     return res.json({ valid: true, message: '✅ Welcome back. You are still the active user.' });
   }
 
-  // UUID already in use by another IP
   return res.status(401).json({ valid: false, message: '❌ UUID already in use by another IP.' });
 });
 
@@ -98,6 +96,20 @@ app.get('/register', (req, res) => {
   saveValidUUIDs(uuids);
   validUUIDs = uuids;
   res.json({ uuid: newUUID, message: '✅ Your personal UUID is now registered.' });
+});
+
+
+// 📈 BYBIT PRICE FETCH ENDPOINT 🔥
+app.get('/bybit-price', async (req, res) => {
+  try {
+    const bybitUrl = 'https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT';
+    const response = await fetch(bybitUrl);
+    const data = await response.json();
+    const price = parseFloat(data.result[0].last_price);
+    res.json({ price });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch from Bybit', details: err.message });
+  }
 });
 
 
