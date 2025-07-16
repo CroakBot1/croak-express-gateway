@@ -1,9 +1,9 @@
-// == CROAK UUID GATEWAY – FINAL FULL VERSION 🧠🐸 ==
+// ✅ CROAK EXPRESS GATEWAY WITH BYBIT PRICE + UUID SYSTEM
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
-const fetch = require('node-fetch');
 const { v4: uuidv4 } = require('uuid');
+const fetch = require('node-fetch'); // ✅ fixed module import
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -14,8 +14,7 @@ app.use(express.json());
 const SESSION_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
 
-
-// 🧠 Load temporary session IPs
+// ✅ Load temporary session IPs
 function loadUUIDSessions() {
   try {
     return JSON.parse(fs.readFileSync(SESSION_FILE));
@@ -24,12 +23,12 @@ function loadUUIDSessions() {
   }
 }
 
-// 💾 Save session locks
+// ✅ Save session locks
 function saveUUIDSessions(data) {
   fs.writeFileSync(SESSION_FILE, JSON.stringify(data, null, 2));
 }
 
-// 🔐 Load permanent UUID list
+// ✅ Load permanent UUIDs
 function loadValidUUIDs() {
   try {
     return JSON.parse(fs.readFileSync(VALID_UUIDS_FILE));
@@ -38,15 +37,14 @@ function loadValidUUIDs() {
   }
 }
 
-// 💾 Save permanent UUID list
+// ✅ Save permanent UUID list
 function saveValidUUIDs(data) {
   fs.writeFileSync(VALID_UUIDS_FILE, JSON.stringify(data, null, 2));
 }
 
 let validUUIDs = loadValidUUIDs();
 
-
-// ✅ VALIDATE UUID & LOCK IP
+// ✅ Validate UUID and Lock IP
 app.post('/validate-uuid', (req, res) => {
   const { uuid, clientIP } = req.body;
   if (!uuid || !clientIP) return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
@@ -69,8 +67,7 @@ app.post('/validate-uuid', (req, res) => {
   return res.status(401).json({ valid: false, message: '❌ UUID already in use by another IP.' });
 });
 
-
-// 🔓 UNBIND UUID on exit/refresh
+// ✅ Unbind UUID
 app.post('/unbind-uuid', (req, res) => {
   const { uuid, clientIP } = req.body;
   const sessions = loadUUIDSessions();
@@ -87,8 +84,7 @@ app.post('/unbind-uuid', (req, res) => {
   return res.status(403).json({ unbound: false, message: '❌ Only the original IP can unbind this session.' });
 });
 
-
-// 🎫 GENERATE UUID + SAVE
+// ✅ Generate UUID
 app.get('/register', (req, res) => {
   const newUUID = uuidv4();
   const uuids = loadValidUUIDs();
@@ -98,12 +94,10 @@ app.get('/register', (req, res) => {
   res.json({ uuid: newUUID, message: '✅ Your personal UUID is now registered.' });
 });
 
-
-// 📈 BYBIT PRICE FETCH ENDPOINT 🔥
+// ✅ NEW: Bybit Price Proxy Endpoint
 app.get('/bybit-price', async (req, res) => {
   try {
-    const bybitUrl = 'https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT';
-    const response = await fetch(bybitUrl);
+    const response = await fetch('https://api.bybit.com/v2/public/tickers?symbol=ETHUSDT');
     const data = await response.json();
     const price = parseFloat(data.result[0].last_price);
     res.json({ price });
@@ -112,8 +106,7 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
-
-// 🚀 START SERVER
+// ✅ Start Server
 app.listen(PORT, () => {
-  console.log(`🟢 Croak UUID Gateway live on port ${PORT}`);
+  console.log(`🟢 Croak Express Gateway running on port ${PORT}`);
 });
