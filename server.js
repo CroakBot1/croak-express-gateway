@@ -7,6 +7,7 @@ const fetch = require('node-fetch');
 const crypto = require('crypto');
 const axios = require('axios');
 
+// == INITIAL SETUP ==
 const app = express();
 const PORT = process.env.PORT || 10000;
 app.use(cors());
@@ -29,7 +30,7 @@ let wallet = {
 };
 let lastBuyPrice = null;
 
-// == UTILS ==
+// == UTILITIES ==
 function loadFile(path) {
   try {
     return JSON.parse(fs.readFileSync(path));
@@ -57,20 +58,20 @@ function checkAuth(req, res) {
 
 // == ROUTES ==
 
-// Health Checks
+// -- Health Checks --
 app.get('/', (req, res) => res.send('CROAK SERVER ACTIVE'));
 app.get('/heartbeat', (req, res) => res.send('❤️ CROAK alive and listening'));
 app.get('/ping', (req, res) => res.send(`🟢 Backend is alive at ${new Date().toISOString()}`));
 app.get('/keep-alive', (req, res) => res.send('🟢 Croak server is alive!'));
 
-// ✅ TEST ENDPOINT for frontend
+// -- Test Endpoint --
 app.post('/api/test', (req, res) => {
-  console.log('✅ POST /api/test received');
+  console.log('✅ POST /api/test received:', req.body);
   const message = req.body.message || 'No message';
-  res.json({ reply: `Hello! You said: ${message}` });
+  res.json({ success: true, reply: `Hello! You said: ${message}` });
 });
 
-// Wallet (CROAK + PHP) endpoints
+// -- Wallet Operations --
 app.get('/wallet', (req, res) => {
   if (!checkAuth(req, res)) return;
   res.json(wallet);
@@ -101,7 +102,7 @@ app.post('/sell', (req, res) => {
   }
 });
 
-// Trade simulation using ETH/USDT
+// -- Simulated ETH/USDT Trades --
 app.post('/buy-sim', (req, res) => {
   if (!checkAuth(req, res)) return;
   const { price } = req.body;
@@ -122,7 +123,7 @@ app.post('/sell-sim', (req, res) => {
   res.json({ message: `SELL executed at $${price}`, eth: wallet.eth, usdt: wallet.usdt });
 });
 
-// UUID endpoints
+// -- UUID Management --
 app.post('/generate-uuid', (req, res) => {
   const uuids = loadFile(UUID_DATA_FILE);
   const newUUID = uuidv4();
@@ -172,7 +173,7 @@ app.get('/dev-all', (req, res) => {
   res.json(uuids);
 });
 
-// BYBIT execution + price fetch
+// -- Bybit API Interaction --
 app.post('/execute-trade', async (req, res) => {
   try {
     const { symbol = 'ETHUSDT', side = 'Buy', qty = 1 } = req.body;
@@ -204,7 +205,7 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
-// START SERVER
+// == START SERVER ==
 app.listen(PORT, () => {
   console.log(`🟢 Croak Gateway fully running on port ${PORT}`);
 });
