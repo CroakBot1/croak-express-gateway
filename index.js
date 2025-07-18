@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const fetch = require('node-fetch');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -14,6 +15,10 @@ app.use(express.json());
 const SESSION_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
 const IP_EXPIRY_HOURS = 24;
+
+// === BYBIT MAINNET KEYS (REQUIRED FOR LIVE BALANCE) ===
+const BYBIT_API_KEY = 'YOUR_API_KEY_HERE';
+const BYBIT_API_SECRET = 'YOUR_API_SECRET_HERE';
 
 // == Helper Functions ==
 function loadJSON(file) {
@@ -111,6 +116,32 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
+// 💰 WALLET BALANCE CHECK (REAL FROM BYBIT)
+app.get('/wallet', async (req, res) => {
+  try {
+    const timestamp = Date.now();
+    const recvWindow = 5000;
+
+    const params = `api_key=${BYBIT_API_KEY}&recvWindow=${recvWindow}&timestamp=${timestamp}`;
+    const sign = require('crypto')
+      .createHmac('sha256', BYBIT_API_SECRET)
+      .update(params)
+      .digest('hex');
+
+    const url = `https://api.bybit.com/v2/private/wallet/balance?${params}&sign=${sign}`;
+
+    const response = await axios.get(url);
+    const balances = response.data.result;
+    const eth = balances.ETH?.available_balance || 0;
+    const usdt = balances.USDT?.available_balance || 0;
+
+    res.json({ eth, usdt });
+  } catch (err) {
+    console.error('[WALLET ERROR]', err.response?.data || err.message);
+    res.status(500).json({ error: 'Failed to fetch wallet', details: err.message });
+  }
+});
+
 // ❤️ Heartbeat (cron job)
 app.get('/heartbeat', (req, res) => {
   console.log(`[HEARTBEAT] Ping at ${new Date().toISOString()}`);
@@ -132,4 +163,3 @@ app.get('/dev-all', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🟢 Croak Gateway running on port ${PORT}`);
 });
-                     
