@@ -57,11 +57,18 @@ function checkAuth(req, res) {
 
 // == ROUTES ==
 
-// Health checks
+// Health Checks
 app.get('/', (req, res) => res.send('CROAK SERVER ACTIVE'));
 app.get('/heartbeat', (req, res) => res.send('❤️ CROAK alive and listening'));
 app.get('/ping', (req, res) => res.send(`🟢 Backend is alive at ${new Date().toISOString()}`));
 app.get('/keep-alive', (req, res) => res.send('🟢 Croak server is alive!'));
+
+// ✅ TEST ENDPOINT for frontend
+app.post('/api/test', (req, res) => {
+  console.log('✅ POST /api/test received');
+  const message = req.body.message || 'No message';
+  res.json({ reply: `Hello! You said: ${message}` });
+});
 
 // Wallet (CROAK + PHP) endpoints
 app.get('/wallet', (req, res) => {
@@ -197,7 +204,7 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
-// Start server
+// START SERVER
 app.listen(PORT, () => {
   console.log(`🟢 Croak Gateway fully running on port ${PORT}`);
 });
