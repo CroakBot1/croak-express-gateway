@@ -170,6 +170,62 @@ app.get('/keep-alive', (req, res) => {
   res.send('🟢 Croak server is alive!');
 });
 
+// == SIMULATED WALLET & TRADES ==
+let wallet = {
+  eth: 0,
+  usdt: 0
+};
+
+let lastBuyPrice = null;
+
+app.get('/wallet', (req, res) => {
+  res.json({
+    eth: wallet.eth,
+    usdt: wallet.usdt
+  });
+});
+
+app.post('/buy', (req, res) => {
+  const { price } = req.body;
+
+  if (wallet.usdt < 10) {
+    return res.status(400).json({ error: 'Insufficient USDT' });
+  }
+
+  let ethBought = wallet.usdt / price;
+  wallet.eth += ethBought;
+  wallet.usdt = 0;
+  lastBuyPrice = price;
+
+  res.json({
+    message: `BUY executed at $${price}`,
+    eth: wallet.eth,
+    usdt: wallet.usdt
+  });
+});
+
+app.post('/sell', (req, res) => {
+  const { price } = req.body;
+
+  if (wallet.eth < 0.001) {
+    return res.status(400).json({ error: 'Insufficient ETH' });
+  }
+
+  let usdtReceived = wallet.eth * price;
+  wallet.usdt += usdtReceived;
+  wallet.eth = 0;
+
+  res.json({
+    message: `SELL executed at $${price}`,
+    eth: wallet.eth,
+    usdt: wallet.usdt
+  });
+});
+
+app.get('/ping', (req, res) => {
+  res.send(`🟢 Backend is alive at ${new Date().toISOString()}`);
+});
+
 app.listen(PORT, () => {
   console.log(`🟢 Croak Gateway running on port ${PORT}`);
 });
