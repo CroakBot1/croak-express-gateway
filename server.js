@@ -87,8 +87,8 @@ async function executeBybitOrder({ symbol, side, qty, type = 'MARKET', category 
 }
 
 app.post('/execute-trade', async (req, res) => {
-  const { symbol = 'ETHUSDT', side = 'Buy', qty = 1 } = req.body;
   try {
+    const { symbol = 'ETHUSDT', side = 'Buy', qty = 1 } = req.body;
     const result = await executeBybitOrder({ symbol, side, qty });
     res.json({ success: true, result });
   } catch (err) {
@@ -98,60 +98,76 @@ app.post('/execute-trade', async (req, res) => {
 
 // == UUID SYSTEM ==
 app.post('/generate-uuid', (req, res) => {
-  const uuids = loadFile(UUID_DATA_FILE);
-  const newUUID = uuidv4();
-  uuids[newUUID] = { ip: null, created: new Date().toISOString(), boundAt: null };
-  saveFile(UUID_DATA_FILE, uuids);
-  res.json({ uuid: newUUID, status: '✅ UUID generated. Not yet bound.' });
+  try {
+    const uuids = loadFile(UUID_DATA_FILE);
+    const newUUID = uuidv4();
+    uuids[newUUID] = { ip: null, created: new Date().toISOString(), boundAt: null };
+    saveFile(UUID_DATA_FILE, uuids);
+    res.json({ uuid: newUUID, status: '✅ UUID generated. Not yet bound.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to generate UUID' });
+  }
 });
 
 app.post('/validate-uuid', (req, res) => {
-  const { uuid, clientIP } = req.body;
-  if (!uuid || !clientIP) return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
+  try {
+    const { uuid, clientIP } = req.body;
+    if (!uuid || !clientIP) return res.status(400).json({ valid: false, message: '❌ Missing UUID or IP.' });
 
-  const uuids = loadFile(UUID_DATA_FILE);
-  const data = uuids[uuid];
-  if (!data) return res.status(404).json({ valid: false, message: '❌ UUID not found.' });
+    const uuids = loadFile(UUID_DATA_FILE);
+    const data = uuids[uuid];
+    if (!data) return res.status(404).json({ valid: false, message: '❌ UUID not found.' });
 
-  if (!data.ip || isExpired(data.boundAt)) {
-    data.ip = clientIP;
-    data.boundAt = new Date().toISOString();
-    uuids[uuid] = data;
-    saveFile(UUID_DATA_FILE, uuids);
-    return res.json({ valid: true, message: '✅ UUID validated and IP locked.' });
+    if (!data.ip || isExpired(data.boundAt)) {
+      data.ip = clientIP;
+      data.boundAt = new Date().toISOString();
+      uuids[uuid] = data;
+      saveFile(UUID_DATA_FILE, uuids);
+      return res.json({ valid: true, message: '✅ UUID validated and IP locked.' });
+    }
+
+    if (data.ip === clientIP) {
+      return res.json({ valid: true, message: '✅ UUID verified.' });
+    }
+
+    return res.status(401).json({ valid: false, message: '❌ UUID is locked to a different IP.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to validate UUID' });
   }
-
-  if (data.ip === clientIP) {
-    return res.json({ valid: true, message: '✅ UUID verified.' });
-  }
-
-  return res.status(401).json({ valid: false, message: '❌ UUID is locked to a different IP.' });
 });
 
 app.post('/unbind-uuid', (req, res) => {
-  const { uuid, clientIP } = req.body;
-  const uuids = loadFile(UUID_DATA_FILE);
-  const data = uuids[uuid];
-  if (!data) return res.status(404).json({ unbound: false, message: '❌ UUID not found.' });
+  try {
+    const { uuid, clientIP } = req.body;
+    const uuids = loadFile(UUID_DATA_FILE);
+    const data = uuids[uuid];
+    if (!data) return res.status(404).json({ unbound: false, message: '❌ UUID not found.' });
 
-  if (data.ip === clientIP || isExpired(data.boundAt)) {
-    data.ip = null;
-    data.boundAt = null;
-    uuids[uuid] = data;
-    saveFile(UUID_DATA_FILE, uuids);
-    return res.json({ unbound: true, message: '✅ UUID unbound.' });
+    if (data.ip === clientIP || isExpired(data.boundAt)) {
+      data.ip = null;
+      data.boundAt = null;
+      uuids[uuid] = data;
+      saveFile(UUID_DATA_FILE, uuids);
+      return res.json({ unbound: true, message: '✅ UUID unbound.' });
+    }
+
+    return res.status(403).json({ unbound: false, message: '❌ IP mismatch. Cannot unbind UUID.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to unbind UUID' });
   }
-
-  return res.status(403).json({ unbound: false, message: '❌ IP mismatch. Cannot unbind UUID.' });
 });
 
 // == REGISTER UUID (Permanent) ==
 app.get('/register', (req, res) => {
-  const uuids = loadFile(VALID_UUIDS_FILE);
-  const newUUID = uuidv4();
-  uuids[newUUID] = true;
-  saveFile(VALID_UUIDS_FILE, uuids);
-  res.json({ uuid: newUUID, message: '✅ Your UUID is now registered.' });
+  try {
+    const uuids = loadFile(VALID_UUIDS_FILE);
+    const newUUID = uuidv4();
+    uuids[newUUID] = true;
+    saveFile(VALID_UUIDS_FILE, uuids);
+    res.json({ uuid: newUUID, message: '✅ Your UUID is now registered.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to register UUID' });
+  }
 });
 
 // == LIVE PRICE FETCH ==
@@ -184,41 +200,60 @@ let lastBuyPrice = null;
 
 app.get('/wallet', (req, res) => {
   if (!checkAuth(req, res)) return;
-  res.json(wallet);
+  try {
+    res.json(wallet);
+  } catch (e) {
+    console.error('Wallet fetch error:', e);
+    res.status(500).json({ error: 'Failed to fetch wallet' });
+  }
 });
 
-// == TRADE SIMULATION ==
+// == TRADE SIMULATION (Auth-Protected) ==
 app.post('/buy', (req, res) => {
   if (!checkAuth(req, res)) return;
 
-  const { price } = req.body;
-  if (wallet.usdt < 10) return res.status(400).json({ error: 'Insufficient USDT' });
+  try {
+    const { price } = req.body;
+    if (wallet.usdt < 10) return res.status(400).json({ error: 'Insufficient USDT' });
 
-  const ethBought = wallet.usdt / price;
-  wallet.eth += ethBought;
-  wallet.usdt = 0;
-  lastBuyPrice = price;
+    const ethBought = wallet.usdt / price;
+    wallet.eth += ethBought;
+    wallet.usdt = 0;
+    lastBuyPrice = price;
 
-  res.json({ message: `BUY executed at $${price}`, eth: wallet.eth, usdt: wallet.usdt });
+    res.json({ message: `BUY executed at $${price}`, eth: wallet.eth, usdt: wallet.usdt });
+  } catch (e) {
+    console.error('Buy error:', e);
+    res.status(500).json({ error: 'Buy failed' });
+  }
 });
 
 app.post('/sell', (req, res) => {
   if (!checkAuth(req, res)) return;
 
-  const { price } = req.body;
-  if (wallet.eth < 0.001) return res.status(400).json({ error: 'Insufficient ETH' });
+  try {
+    const { price } = req.body;
+    if (wallet.eth < 0.001) return res.status(400).json({ error: 'Insufficient ETH' });
 
-  const usdtReceived = wallet.eth * price;
-  wallet.usdt += usdtReceived;
-  wallet.eth = 0;
+    const usdtReceived = wallet.eth * price;
+    wallet.usdt += usdtReceived;
+    wallet.eth = 0;
 
-  res.json({ message: `SELL executed at $${price}`, eth: wallet.eth, usdt: wallet.usdt });
+    res.json({ message: `SELL executed at $${price}`, eth: wallet.eth, usdt: wallet.usdt });
+  } catch (e) {
+    console.error('Sell error:', e);
+    res.status(500).json({ error: 'Sell failed' });
+  }
 });
 
 // == DEV UUID DUMP ==
 app.get('/dev-all', (req, res) => {
-  const uuids = loadFile(UUID_DATA_FILE);
-  res.json(uuids);
+  try {
+    const uuids = loadFile(UUID_DATA_FILE);
+    res.json(uuids);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch UUIDs' });
+  }
 });
 
 app.listen(PORT, () => {
