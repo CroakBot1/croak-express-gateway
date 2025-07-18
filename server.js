@@ -33,6 +33,7 @@ let lastBuyPrice = null;
 // == UTILITIES ==
 function loadFile(path) {
   try {
+    if (!fs.existsSync(path)) return {};
     return JSON.parse(fs.readFileSync(path));
   } catch {
     return {};
