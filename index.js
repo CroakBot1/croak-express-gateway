@@ -122,19 +122,27 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
-// === WALLET BALANCE CHECK ===
+// === WALLET BALANCE CHECK (BYBIT v5 Unified Account) ===
 app.get('/wallet', async (req, res) => {
   try {
     const timestamp = Date.now();
     const recvWindow = 5000;
-    const params = `api_key=${BYBIT_API_KEY}&recvWindow=${recvWindow}&timestamp=${timestamp}`;
-    const sign = crypto.createHmac('sha256', BYBIT_API_SECRET).update(params).digest('hex');
-    const url = `https://api.bybit.com/v2/private/wallet/balance?${params}&sign=${sign}`;
 
-    const response = await axios.get(url);
-    const balances = response.data.result;
-    const eth = balances.ETH?.available_balance || 0;
-    const usdt = balances.USDT?.available_balance || 0;
+    const queryString = `apiKey=${BYBIT_API_KEY}&recvWindow=${recvWindow}&timestamp=${timestamp}`;
+    const sign = crypto.createHmac('sha256', BYBIT_API_SECRET).update(queryString).digest('hex');
+
+    const url = `https://api.bybit.com/v5/account/wallet-balance?accountType=UNIFIED&${queryString}&sign=${sign}`;
+
+    const response = await axios.get(url, {
+      headers: {
+        'X-BYBIT-API-KEY': BYBIT_API_KEY
+      }
+    });
+
+    const coins = response.data?.result?.list?.[0]?.coin || [];
+
+    const eth = parseFloat(coins.find(c => c.coin === 'ETH')?.availableToWithdraw || 0);
+    const usdt = parseFloat(coins.find(c => c.coin === 'USDT')?.availableToWithdraw || 0);
 
     res.json({ eth, usdt });
   } catch (err) {
