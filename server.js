@@ -16,6 +16,16 @@ app.use(express.json());
 // == AUTH TOKEN ==
 const AUTH_TOKEN = "croakSuperSecure123"; // must match frontend
 
+// == AUTH CHECK FUNCTION ==
+function checkAuth(req, res) {
+  const auth = req.headers.authorization;
+  if (auth !== `Bearer ${AUTH_TOKEN}`) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+  return true;
+}
+
 // == FILE PATHS ==
 const UUID_DATA_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
@@ -173,15 +183,14 @@ let wallet = { eth: 0, usdt: 1000 };
 let lastBuyPrice = null;
 
 app.get('/wallet', (req, res) => {
-  const auth = req.headers.authorization;
-  if (auth !== `Bearer ${AUTH_TOKEN}`) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  if (!checkAuth(req, res)) return;
   res.json(wallet);
 });
 
 // == TRADE SIMULATION ==
 app.post('/buy', (req, res) => {
+  if (!checkAuth(req, res)) return;
+
   const { price } = req.body;
   if (wallet.usdt < 10) return res.status(400).json({ error: 'Insufficient USDT' });
 
@@ -194,6 +203,8 @@ app.post('/buy', (req, res) => {
 });
 
 app.post('/sell', (req, res) => {
+  if (!checkAuth(req, res)) return;
+
   const { price } = req.body;
   if (wallet.eth < 0.001) return res.status(400).json({ error: 'Insufficient ETH' });
 
