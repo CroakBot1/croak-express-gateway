@@ -7,3 +7,6 @@ git push origin main
 git add utils/logger.js .gitignore
 git commit -m "Add logger system with file and console output"
 git push
+git add src/brain.js
+git commit -m "Add brain.js module"
+git push origin main
