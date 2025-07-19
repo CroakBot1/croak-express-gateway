@@ -1,3 +1,6 @@
 git add brain.js routes/trigger-brain.js server.js
 git commit -m "Add trigger endpoint for 61k brain logic"
 git push
+git add auto-trade-runner.js
+git commit -m "Add auto trade runner logic"
+git push origin main
