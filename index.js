@@ -172,3 +172,12 @@ app.get('/dev-all', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Unified Croak Gateway running on port ${PORT}`);
 });
+
+// === START AUTO TRADING BOT ===
+try {
+  require('./auto-trade-runner');
+  console.log('🧠 Auto-trade bot loaded successfully');
+} catch (err) {
+  console.error('❌ Failed to start auto-trade bot:', err.message);
+            }
+      
