@@ -1,24 +1,29 @@
-// sentimentLayer.js – Simple Sentiment Scanner Layer
+// sentimentLayer.js
 
-module.exports = function sentimentLayer(priceHistory) {
-    const changes = [];
+function analyze(marketData) {
+  // Sample logic: return score from -1 (very bearish) to 1 (very bullish)
+  if (!marketData || typeof marketData !== 'object') {
+    return 0; // neutral fallback
+  }
 
-    for (let i = 1; i < priceHistory.length; i++) {
-        const diff = priceHistory[i] - priceHistory[i - 1];
-        changes.push(diff);
-    }
+  const { price, volume, trend } = marketData;
 
-    const positive = changes.filter(c => c > 0).length;
-    const negative = changes.filter(c => c < 0).length;
+  let score = 0;
 
-    const score = (positive / (positive + negative + 1)) * 100;
+  // Trend-based
+  if (trend === 'up') score += 0.5;
+  if (trend === 'down') score -= 0.5;
 
-    if (score > 65) {
-        return { sentiment: 'BULLISH', score };
-    } else if (score < 35) {
-        return { sentiment: 'BEARISH', score };
-    } else {
-        return { sentiment: 'NEUTRAL', score };
-    }
+  // Volume-based
+  if (volume > 100000) score += 0.2;
+
+  // Price movement (example logic)
+  if (price.changePct > 5) score += 0.3;
+  else if (price.changePct < -5) score -= 0.3;
+
+  return Math.max(-1, Math.min(1, score)); // clamp to -1 ~ 1
+}
+
+module.exports = {
+  analyze
 };
-
