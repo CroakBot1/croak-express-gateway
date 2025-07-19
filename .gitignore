@@ -4,3 +4,6 @@ git push
 git add auto-trade-runner.js
 git commit -m "Add auto trade runner logic"
 git push origin main
+git add utils/logger.js .gitignore
+git commit -m "Add logger system with file and console output"
+git push
