@@ -1,4 +1,4 @@
-// logger.js
+// src/logger.js
 
 function info(...args) {
   console.log('[ℹ️ INFO]', ...args);
@@ -12,7 +12,7 @@ function error(...args) {
   console.error('[❌ ERROR]', ...args);
 }
 
-function heartbeat(msg = "💓 CROAK Loop alive") {
+function heartbeat(msg = "💓 CROAK Loop is alive") {
   console.log(`[HEARTBEAT] ${msg}`);
 }
 
