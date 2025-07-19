@@ -16,3 +16,6 @@ git push origin main
 git add src/vetoLayer.js src/memoryCore.js
 git commit -m "Add vetoLayer and memoryCore modules"
 git push origin main
+git add .
+git commit -m "Add vetoLayer, memoryCore, and sentimentLayer"
+git push
