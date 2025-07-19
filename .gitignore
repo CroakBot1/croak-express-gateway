@@ -10,3 +10,6 @@ git push
 git add src/brain.js
 git commit -m "Add brain.js module"
 git push origin main
+git add src/trapLayer.js
+git commit -m "Add missing trapLayer.js placeholder"
+git push origin main
