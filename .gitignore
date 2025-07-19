@@ -13,3 +13,6 @@ git push origin main
 git add src/trapLayer.js
 git commit -m "Add missing trapLayer.js placeholder"
 git push origin main
+git add src/vetoLayer.js src/memoryCore.js
+git commit -m "Add vetoLayer and memoryCore modules"
+git push origin main
