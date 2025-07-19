@@ -12,7 +12,11 @@ function error(...args) {
   console.error('[❌ ERROR]', ...args);
 }
 
-function heartbeat(msg = "💓 CROAK Loop is alive") {
+function log(...args) {
+  console.log('[LOG]', ...args);
+}
+
+function heartbeat(msg = "💓 CROAK BOT HEARTBEAT – Loop is alive") {
   console.log(`[HEARTBEAT] ${msg}`);
 }
 
@@ -20,5 +24,6 @@ module.exports = {
   info,
   warn,
   error,
-  heartbeat
+  log,
+  heartbeat,
 };
