@@ -1,4 +1,4 @@
-// src/logger.js
+// src/utils/logger.js
 
 function info(...args) {
   console.log('[ℹ️ INFO]', ...args);
@@ -12,18 +12,18 @@ function error(...args) {
   console.error('[❌ ERROR]', ...args);
 }
 
-function log(...args) {
-  console.log('[LOG]', ...args);
+function heartbeat(msg = "💓 CROAK Loop is alive") {
+  console.log(`[HEARTBEAT] ${msg}`);
 }
 
-function heartbeat(msg = "💓 CROAK BOT HEARTBEAT – Loop is alive") {
-  console.log(`[HEARTBEAT] ${msg}`);
+function trackDecision(decision) {
+  console.log(`[🤖 DECISION] Action: ${decision.action} | Confidence: ${decision.confidence} | Reasons: ${decision.reason.join(", ")}`);
 }
 
 module.exports = {
   info,
   warn,
   error,
-  log,
   heartbeat,
+  trackDecision
 };
