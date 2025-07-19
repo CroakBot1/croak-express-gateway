@@ -19,3 +19,6 @@ git push origin main
 git add .
 git commit -m "Add vetoLayer, memoryCore, and sentimentLayer"
 git push
+git add src/logger.js
+git commit -m "Add heartbeat function to logger"
+git push
