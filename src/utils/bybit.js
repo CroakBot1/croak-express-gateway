@@ -15,14 +15,14 @@ const BYBIT_API_SECRET = 'dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT';
 console.log('[🛠 DEBUG] BYBIT_API_KEY is', BYBIT_API_KEY ? 'SET' : 'MISSING');
 console.log('[🛠 DEBUG] BYBIT_API_SECRET is', BYBIT_API_SECRET ? 'SET' : 'MISSING');
 
-// 🔧 Initialize Bybit client with try-catch
+// ✅ FIX: Correct initialization format
 let client;
 try {
-  client = new LinearClient({
-    key: BYBIT_API_KEY,
-    secret: BYBIT_API_SECRET,
-    testnet: false, // change to true for testnet
-  });
+  if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
+    throw new Error('❌ API Key & Secret are required for private endpoints');
+  }
+
+  client = new LinearClient(BYBIT_API_KEY, BYBIT_API_SECRET, false); // false = MAINNET
   logger.info('✅ Bybit client initialized');
 } catch (err) {
   logger.error('❌ Failed to initialize Bybit client:', err.message || err);
