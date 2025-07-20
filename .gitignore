@@ -38,4 +38,7 @@ git push origin main
 git add src/logger.js
 git commit -m "Add logger utility for backend logs"
 git push
+git add src/logger.js
+git commit -m "🧠 Add logger.js to fix Render startup error"
+git push origin main
 
