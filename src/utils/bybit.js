@@ -14,7 +14,7 @@ if (!process.env.BYBIT_API_KEY || !process.env.BYBIT_API_SECRET) {
 const client = new LinearClient({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
-  testnet: false,
+  testnet: false, // Set to true if using testnet
 });
 
 // -------------------- LIVE ORDER EXECUTION --------------------
@@ -43,7 +43,14 @@ async function placeMarketOrder(symbol, side, qty) {
 async function getCandles(symbol = "ETHUSDT", interval = "1") {
   try {
     const res = await client.getKline({ symbol, interval, limit: 200 });
-    return res.result;
+    return res.result.map(c => ({
+      timestamp: c.open_time,
+      open: parseFloat(c.open),
+      high: parseFloat(c.high),
+      low: parseFloat(c.low),
+      close: parseFloat(c.close),
+      volume: parseFloat(c.volume),
+    }));
   } catch (err) {
     logger.error("[❌ CANDLES ERROR]", err.message || err);
     return [];
@@ -77,7 +84,7 @@ async function getWalletBalance(coin = "USDT") {
 }
 
 async function getCapital(symbol = "ETHUSDT") {
-  return await getWalletBalance("USDT"); // Simplified capital base
+  return await getWalletBalance("USDT");
 }
 
 async function getOpenPositions(symbol = "ETHUSDT") {
