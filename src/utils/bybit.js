@@ -14,5 +14,20 @@ module.exports = {
   getBalance: async () => {
     console.log(`[💰 MOCK BALANCE] Returning fake balance`);
     return { balance: 9999 };
+  },
+
+  getCandles: async (symbol, interval, limit = 100) => {
+    console.log(`[📊 MOCK CANDLES] Symbol: ${symbol}, Interval: ${interval}, Limit: ${limit}`);
+    
+    // Dummy candles: OHLCV pattern (open, high, low, close, volume)
+    const candles = Array.from({ length: limit }, (_, i) => ({
+      open: 2800 + i,
+      high: 2850 + i,
+      low: 2750 + i,
+      close: 2820 + i,
+      volume: 1000 + i
+    }));
+
+    return candles;
   }
 };
