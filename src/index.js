@@ -19,7 +19,7 @@ const SESSION_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
 const IP_EXPIRY_HOURS = 24;
 
-// === BYBIT KEYS (replace with real ones) ===
+// === BYBIT KEYS (replace with real ones or load from .env) ===
 const BYBIT_API_KEY = 'YOUR_API_KEY_HERE';
 const BYBIT_API_SECRET = 'YOUR_API_SECRET_HERE';
 
@@ -179,5 +179,4 @@ try {
   console.log('🧠 Auto-trade bot loaded successfully');
 } catch (err) {
   console.error('❌ Failed to start auto-trade bot:', err.message);
-            }
-      
+}
