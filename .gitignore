@@ -29,4 +29,7 @@ cd your-project-folder
 git add bybit.js
 git commit -m "🟢 Add working bybit.js with mock functions and getMemoryState()"
 git push origin main  # or whatever your branch is
+git add package.json
+git commit -m "Add bybit-api package"
+git push origin main
 
