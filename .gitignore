@@ -1,3 +1,7 @@
 git add .
 git commit -m "fix: update start script after removing src folder"
 git push
+npm install
+git add package-lock.json
+git commit -m "Add lockfile to force npm usage"
+git push
