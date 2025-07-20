@@ -1,84 +1,59 @@
 // src/utils/bybit.js
-const axios = require('axios');
+
+const { USDCClient, USDTPair, linear, inverse } = require('bybit-api'); // Optional backup
+const { LinearClient } = require('bybit-api');
 const logger = require('../logger');
 
-// Basic config (mocked endpoints)
-const SYMBOL = 'ETHUSDT';
+const client = new LinearClient({
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET,
+  testnet: false, // ⚠️ Set to false for LIVE
+});
 
-// --------------------- MOCK DATA PROVIDERS ---------------------
-
-async function getLivePrice() {
+async function placeMarketOrder(symbol, side, qty) {
   try {
-    // Replace with real endpoint if needed
-    const mockPrice = 2850.75;
-    logger.info(`[bybit.js] Mock live price fetched: ${mockPrice}`);
-    return mockPrice;
+    const response = await client.placeActiveOrder({
+      symbol: symbol,
+      side: side, // "Buy" or "Sell"
+      order_type: "Market",
+      qty: qty,
+      time_in_force: "GoodTillCancel",
+      reduce_only: false,
+      close_on_trigger: false,
+    });
+
+    logger.info(`[LIVE ORDER] ${side} ${qty} ${symbol}:`, response);
+    return response;
   } catch (err) {
-    logger.error('[getLivePrice ERROR]', err.message);
+    logger.error("[❌ LIVE ORDER ERROR]", err.message || err);
     return null;
   }
 }
 
-async function getCandles(interval = '1m', limit = 100) {
+async function getWalletBalance(coin = "USDT") {
   try {
-    // Replace with real candle data
-    const mockCandles = Array.from({ length: limit }).map((_, i) => ({
-      open: 2800 + i,
-      close: 2801 + i,
-      high: 2802 + i,
-      low: 2799 + i,
-      volume: 1000 + i,
-      timestamp: Date.now() - i * 60000
-    }));
-    logger.info(`[bybit.js] Mock candles fetched: ${mockCandles.length} bars`);
-    return mockCandles.reverse(); // ascending
+    const res = await client.getWalletBalance({ coin });
+    const balance = res.result[coin]?.available_balance;
+    logger.info(`[BALANCE] ${coin}: ${balance}`);
+    return balance;
   } catch (err) {
-    logger.error('[getCandles ERROR]', err.message);
+    logger.error("[❌ GET BALANCE ERROR]", err.message || err);
+    return 0;
+  }
+}
+
+async function getOpenPositions(symbol = "ETHUSDT") {
+  try {
+    const res = await client.getPositionList({ symbol });
+    return res.result;
+  } catch (err) {
+    logger.error("[❌ POSITION ERROR]", err.message || err);
     return [];
   }
 }
 
-async function getPnL() {
-  try {
-    // Placeholder mock value
-    const mockPnL = 25.75;
-    logger.info(`[bybit.js] Mock PnL fetched: ${mockPnL}`);
-    return mockPnL;
-  } catch (err) {
-    logger.error('[getPnL ERROR]', err.message);
-    return null;
-  }
-}
-
-async function getCapital() {
-  try {
-    // Placeholder mock capital
-    const mockCapital = 1000;
-    logger.info(`[bybit.js] Mock capital fetched: ${mockCapital}`);
-    return mockCapital;
-  } catch (err) {
-    logger.error('[getCapital ERROR]', err.message);
-    return null;
-  }
-}
-
-async function buyMarket(price, qty) {
-  logger.execution('BUY', price, qty);
-  return { status: 'filled', price, qty };
-}
-
-async function sellMarket(price, qty) {
-  logger.execution('SELL', price, qty);
-  return { status: 'filled', price, qty };
-}
-
-// --------------------- EXPORTS ---------------------
-
 module.exports = {
-  getLivePrice,
-  getCandles,
-  getPnL,
-  getCapital,
-  buyMarket,
-  sellMarket
+  placeMarketOrder,
+  getWalletBalance,
+  getOpenPositions,
 };
