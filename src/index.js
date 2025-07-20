@@ -8,6 +8,8 @@ const { v4: uuidv4 } = require('uuid');
 const fetch = require('node-fetch');
 const axios = require('axios');
 const crypto = require('crypto');
+const { info, error } = require('./utils/logger'); // ✅ Use logger
+const runAutoTrade = require('./auto-trade-runner');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -109,7 +111,7 @@ app.post('/unbind-uuid', (req, res) => {
   return res.status(403).json({ unbound: false, message: '❌ IP mismatch.' });
 });
 
-// === LIVE PRICE FETCH (ETHUSDT or from .env) ===
+// === LIVE PRICE FETCH ===
 app.get('/bybit-price', async (req, res) => {
   try {
     const response = await fetch(`https://api.bybit.com/v5/market/tickers?category=linear&symbol=${TRADE_SYMBOL}`);
@@ -126,7 +128,7 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
-// === WALLET BALANCE CHECK ===
+// === WALLET BALANCE ===
 app.get('/wallet', async (req, res) => {
   try {
     const timestamp = Date.now();
@@ -142,7 +144,6 @@ app.get('/wallet', async (req, res) => {
     });
 
     const coins = response.data?.result?.list?.[0]?.coin || [];
-
     const eth = parseFloat(coins.find(c => c.coin === 'ETH')?.availableToWithdraw || 0);
     const usdt = parseFloat(coins.find(c => c.coin === 'USDT')?.availableToWithdraw || 0);
 
@@ -172,17 +173,19 @@ app.get('/dev-all', (req, res) => {
 
 // === START SERVER ===
 app.listen(PORT, () => {
-  console.log(`🚀 Unified Croak Gateway running on port ${PORT}`);
+  info(`🚀 Unified Croak Gateway running on port ${PORT}`);
 });
 
-// === START AUTO TRADING BOT (Only if .env is properly set) ===
-try {
-  if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
-    throw new Error('API Key & Secret are both required for private endpoints');
-  }
+// === START AUTO TRADING BOT ===
+(async () => {
+  try {
+    if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
+      throw new Error('API Key & Secret are both required for private endpoints');
+    }
 
-  require('./auto-trade-runner');
-  console.log('🧠 Auto-trade bot loaded successfully');
-} catch (err) {
-  console.error('❌ Failed to start auto-trade bot:', err.message);
-}
+    await runAutoTrade();
+    info('🧠 Auto-trade bot loaded successfully');
+  } catch (err) {
+    error('❌ Failed to start auto-trade bot:', err.message || err);
+  }
+})();
