@@ -1,19 +1,17 @@
 {
-  "name": "croak-express-gateway",
+  "name": "croak-bot-live",
   "version": "1.0.0",
-  "description": "CroakBot 24/7 Express Gateway",
+  "description": "Croak Bot 24/7 Live Trading Execution",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "dependencies": {
-    "axios": "^1.6.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.19.2",
-    "node-fetch": "^3.3.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "keywords": [
+    "croak",
+    "bot",
+    "autotrade"
+  ],
+  "author": "Agawon",
+  "license": "MIT",
+  "dependencies": {}
 }
