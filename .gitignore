@@ -1,0 +1,3 @@
+git add .
+git commit -m "fix: update start script after removing src folder"
+git push
