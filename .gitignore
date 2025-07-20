@@ -5,3 +5,6 @@ npm install
 git add package-lock.json
 git commit -m "Add lockfile to force npm usage"
 git push
+git add package.json index.js
+git commit -m "🚀 Fix: Add working package.json and entry index.js"
+git push origin main
