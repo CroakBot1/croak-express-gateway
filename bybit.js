@@ -1,56 +1,71 @@
-function getLivePrice(symbol = 'ETHUSDT') {
-  console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
-  return 2850;
+// src/utils/bybit.js
+
+function getCandles(symbol) {
+  console.log(`[🕯️ MOCK CANDLES] Fetching mock candles for ${symbol}`);
+  const now = Date.now();
+  return Array.from({ length: 30 }).map((_, i) => ({
+    timestamp: now - (30 - i) * 60 * 1000,
+    open: 2800 + Math.random() * 100,
+    close: 2800 + Math.random() * 100,
+    high: 2900 + Math.random() * 100,
+    low: 2700 + Math.random() * 100,
+    volume: Math.random() * 1000,
+  }));
 }
 
-function getCandles(symbol = 'ETHUSDT', interval = '1m', limit = 100) {
-  console.log(`[📊 MOCK CANDLES] Symbol: ${symbol}, Interval: ${interval}, Limit: ${limit}`);
-  return [];
+function getLivePrice(symbol) {
+  const price = 2850 + Math.random() * 50;
+  console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}, Price: ${price.toFixed(2)}`);
+  return price;
+}
+
+function getPnL(entryPrice, currentPrice, qty, side) {
+  if (!entryPrice || !currentPrice || !qty || !side) {
+    console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}`);
+    return 0;
+  }
+
+  const direction = side.toUpperCase() === "LONG" ? 1 : -1;
+  const pnl = (currentPrice - entryPrice) * qty * direction;
+  console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}, PnL: ${pnl}`);
+  return pnl;
 }
 
 function getCapital() {
-  console.log(`[💰 MOCK CAPITAL] Returning default 1000 USDT`);
-  return 1000;
-}
-
-function getPNL() {
-  console.log(`[📉 MOCK PNL] Entry: undefined, Current: undefined, Qty: undefined, Side: undefined`);
-  return {
-    entryPrice: 0,
-    currentPrice: 0,
-    qty: 0,
-    side: 'NONE',
-    pnl: 0,
-  };
+  const capital = 1000;
+  console.log(`[💰 MOCK CAPITAL] Returning default ${capital} USDT`);
+  return capital;
 }
 
 function getMemoryState() {
-  console.log(`[🧠 MOCK MEMORY] Returning default brain memory state`);
+  console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
   return {
-    strategyVersion: '61K Quantum v5',
-    lastTradeTime: Date.now(),
-    lastSignal: 'BUY',
-    memoryScore: 92.7,
-    confidence: 'High',
+    lastAction: "NONE",
+    confidenceScore: 0.5,
+    recentPnL: 0,
+    lastTradeTime: Date.now() - 30000,
   };
 }
 
-function resetMemoryState() {
-  console.log(`[🧹 MOCK RESET] Memory state reset`);
-  return true;
-}
-
-function placeOrder(side = 'Buy', quantity = 1, symbol = 'ETHUSDT') {
-  console.log(`[🛒 MOCK ORDER] Placing ${side} order for ${quantity} ${symbol}`);
-  return { success: true, mock: true };
+function executeTrade(symbol, side, qty) {
+  const price = getLivePrice(symbol);
+  const ts = Date.now();
+  console.log(`[✅ MOCK TRADE EXECUTED] ${side.toUpperCase()} ${qty} ${symbol} @ ${price} (timestamp: ${ts})`);
+  return {
+    status: "FILLED",
+    symbol,
+    side,
+    qty,
+    price,
+    timestamp: ts,
+  };
 }
 
 module.exports = {
-  getLivePrice,
   getCandles,
+  getLivePrice,
+  getPnL,
   getCapital,
-  getPNL,
+  executeTrade,
   getMemoryState,
-  resetMemoryState,
-  placeOrder,
 };
