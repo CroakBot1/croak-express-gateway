@@ -32,4 +32,7 @@ git push origin main  # or whatever your branch is
 git add package.json
 git commit -m "Add bybit-api package"
 git push origin main
+git add package.json
+git commit -m "Add bybit-api dependency"
+git push origin main
 
