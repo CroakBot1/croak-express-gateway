@@ -37,17 +37,6 @@ function getCapital() {
   return capital;
 }
 
-function getMemoryState() {
-  console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
-  return {
-    lastDecision: null,
-    tradeCount: 0,
-    lastTradeTimestamp: null,
-    memoryScore: 0,
-    lastPNL: 0,
-  };
-}
-
 function executeTrade(symbol, side, qty) {
   const price = getLivePrice(symbol);
   const ts = Date.now();
@@ -62,6 +51,19 @@ function executeTrade(symbol, side, qty) {
   };
 }
 
+// ✅ FIXED: Only one getMemoryState function
+function getMemoryState() {
+  console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
+  return {
+    lastDecision: null,
+    tradeCount: 0,
+    lastTradeTimestamp: null,
+    memoryScore: 0,
+    lastPNL: 0,
+  };
+}
+
+// ✅ FIXED: Only ONE module.exports block
 module.exports = {
   getCandles,
   getLivePrice,
