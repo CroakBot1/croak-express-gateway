@@ -13,11 +13,20 @@ function error(...args) {
 }
 
 function heartbeat(msg = "💓 CROAK Loop is alive") {
-  console.log(`[HEARTBEAT] ${msg}`);
+  const timestamp = new Date().toISOString();
+  console.log(`[HEARTBEAT] ${msg} | ${timestamp}`);
 }
 
-function trackDecision(decision) {
-  console.log(`[🤖 DECISION] Action: ${decision.action} | Confidence: ${decision.confidence} | Reasons: ${decision.reason.join(", ")}`);
+function decision(action, confidence, reasons = []) {
+  console.log(`[🤖 DECISION] Action: ${action} | Confidence: ${confidence} | Reasons: ${reasons.join(', ')}`);
+}
+
+function execution(status, price, qty, symbol = "ETHUSDT") {
+  console.log(`[💥 EXECUTION] ${status} ${qty} ${symbol} @ ${price}`);
+}
+
+function veto(reason) {
+  console.warn(`[🚫 VETO] Trade denied. Reason: ${reason}`);
 }
 
 module.exports = {
@@ -25,5 +34,7 @@ module.exports = {
   warn,
   error,
   heartbeat,
-  trackDecision
+  decision,
+  execution,
+  veto
 };
