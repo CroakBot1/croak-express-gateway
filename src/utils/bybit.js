@@ -1,8 +1,6 @@
-// src/utils/bybit.js
-
 const { LinearClient } = require('bybit-api');
 const axios = require('axios');
-const logger = require('../logger');
+const logger = require('./logger'); // ✅ fixed path
 
 const client = new LinearClient({
   key: process.env.BYBIT_API_KEY,
