@@ -9,14 +9,25 @@ const logger = require('./logger');
 const BYBIT_API_KEY = 'fwYKsTQ84XIyRhnG4g';
 const BYBIT_API_SECRET = 'dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT';
 
-// 🔧 Initialize Bybit client
-const client = new LinearClient({
-  key: BYBIT_API_KEY,
-  secret: BYBIT_API_SECRET,
-  testnet: false, // set to true if using testnet
-});
+// =============================
+// ✅ DEBUG LOGGING
+// =============================
+console.log('[🛠 DEBUG] BYBIT_API_KEY is', BYBIT_API_KEY ? 'SET' : 'MISSING');
+console.log('[🛠 DEBUG] BYBIT_API_SECRET is', BYBIT_API_SECRET ? 'SET' : 'MISSING');
 
-logger.info('✅ Bybit client initialized');
+// 🔧 Initialize Bybit client with try-catch
+let client;
+try {
+  client = new LinearClient({
+    key: BYBIT_API_KEY,
+    secret: BYBIT_API_SECRET,
+    testnet: false, // change to true for testnet
+  });
+  logger.info('✅ Bybit client initialized');
+} catch (err) {
+  logger.error('❌ Failed to initialize Bybit client:', err.message || err);
+  throw err;
+}
 
 // =============================
 // 🔄 MARKET EXECUTION
