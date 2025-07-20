@@ -62,14 +62,12 @@ function getMemoryState() {
   };
 }
 
-// ✅ Final correct export
-const bybit = {
+// ✅ FIXED: Ensure all functions are included in the module.exports
+module.exports = {
   getCandles,
   getLivePrice,
   getPnL,
   getCapital,
   executeTrade,
-  getMemoryState,
+  getMemoryState, // <- make sure this is included
 };
-
-module.exports = bybit;
