@@ -1,12 +1,14 @@
 {
-  "name": "croak-standalone-alive",
+  "name": "backend-trader",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "node-fetch": "^2.6.11"
+    "dotenv": "^16.0.0",
+    "axios": "^1.6.0",
+    "@uniswap/sdk": "^3.0.3",
+    "ethers": "^6.0.0"
   }
 }
