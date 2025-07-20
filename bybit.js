@@ -1,5 +1,6 @@
 // src/utils/bybit.js
 
+// 🕯️ Mock function to simulate historical candles
 function getCandles(symbol) {
   console.log(`[🕯️ MOCK CANDLES] Fetching mock candles for ${symbol}`);
   const now = Date.now();
@@ -13,12 +14,14 @@ function getCandles(symbol) {
   }));
 }
 
+// 📈 Simulated real-time price fetch
 function getLivePrice(symbol) {
   const price = 2850 + Math.random() * 50;
   console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}, Price: ${price.toFixed(2)}`);
   return price;
 }
 
+// 📉 Mock PnL calculator
 function getPnL(entryPrice, currentPrice, qty, side) {
   if (!entryPrice || !currentPrice || !qty || !side) {
     console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}`);
@@ -31,12 +34,14 @@ function getPnL(entryPrice, currentPrice, qty, side) {
   return pnl;
 }
 
+// 💰 Returns mock capital
 function getCapital() {
   const capital = 1000;
   console.log(`[💰 MOCK CAPITAL] Returning default ${capital} USDT`);
   return capital;
 }
 
+// ✅ Simulate a trade execution
 function executeTrade(symbol, side, qty) {
   const price = getLivePrice(symbol);
   const ts = Date.now();
@@ -51,6 +56,7 @@ function executeTrade(symbol, side, qty) {
   };
 }
 
+// 🧠 Mock memory state
 function getMemoryState() {
   console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
   return {
@@ -62,7 +68,7 @@ function getMemoryState() {
   };
 }
 
-// ✅ Final export
+// ✅ Export all mock functions
 module.exports = {
   getCandles,
   getLivePrice,
