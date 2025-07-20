@@ -11,3 +11,6 @@ git push origin main
 git add .
 git commit -m "Move package.json and index.js to root"
 git push origin main
+git add .
+git commit -m "Move index.js and package.json to root"
+git push
