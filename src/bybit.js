@@ -1,42 +1,95 @@
-const logger = require('./logger');
-const bybitUtils = require('./utils/bybit');
+// src/bybit.js
 
-// Simulated Trading Brain Execution Logic
+require('dotenv').config();
+const { WebsocketClient, RestClientV5 } = require('bybit-api');
 
-function executeTradeLogic() {
+// ✅ Load credentials from .env
+const BYBIT_API_KEY = process.env.BYBIT_API_KEY;
+const BYBIT_API_SECRET = process.env.BYBIT_API_SECRET;
+
+if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
+  throw new Error("❌ BYBIT_API_KEY & BYBIT_API_SECRET are both required in your environment.");
+}
+
+// ✅ REST client for placing orders, getting balance, etc.
+const rest = new RestClientV5({
+  key: BYBIT_API_KEY,
+  secret: BYBIT_API_SECRET,
+  testnet: false, // Set to true if you're using testnet
+});
+
+// ✅ WebSocket client (optional real-time updates)
+const ws = new WebsocketClient({
+  key: BYBIT_API_KEY,
+  secret: BYBIT_API_SECRET,
+  market: 'v5',
+  testnet: false,
+});
+
+// ✅ PLACE ORDER
+async function placeOrder({ symbol, side, qty, price, orderType = 'Market' }) {
   try {
-    const balance = bybitUtils.getBalance();
-    const state = bybitUtils.getMemoryState();
-
-    // Ensure state has valid structure
-    if (!state || typeof state.changePct !== 'number') {
-      logger.warn('[⚠️ TRADE LOGIC WARNING] Invalid or missing state. Resetting...');
-      bybitUtils.resetState();
-      return;
-    }
-
-    const changePct = state.changePct;
-
-    if (changePct > 1) {
-      logger.info(`[🚀 SIGNAL] Market up (${changePct}%) – Simulate LONG`);
-      bybitUtils.setMemoryState({ side: 'LONG', entryPrice: 100, qty: balance * 0.5 });
-    } else if (changePct < -1) {
-      logger.info(`[🩸 SIGNAL] Market down (${changePct}%) – Simulate SHORT`);
-      bybitUtils.setMemoryState({ side: 'SHORT', entryPrice: 100, qty: balance * 0.5 });
-    } else {
-      logger.info(`[🤔 NO TRADE] Change: ${changePct}%, holding...`);
-    }
-
+    const res = await rest.submitOrder({
+      category: 'linear',
+      symbol,
+      side,
+      orderType,
+      qty,
+      price,
+      timeInForce: 'GoodTillCancel',
+    });
+    console.log('✅ Order Response:', res);
+    return res;
   } catch (err) {
-    logger.error('[❌ AUTO TRADE ERROR]', err.message || err);
+    console.error('❌ Failed to place order:', err.message || err);
+    return null;
   }
 }
 
-function runBot() {
-  logger.heartbeat('Starting CROAK BOT run cycle...');
-  executeTradeLogic();
+// ✅ GET POSITION
+async function getPositions(symbol = 'ETHUSDT') {
+  try {
+    const res = await rest.getPositionInfo({ category: 'linear', symbol });
+    return res;
+  } catch (err) {
+    console.error('❌ Failed to get positions:', err.message || err);
+    return null;
+  }
 }
 
+// ✅ GET WALLET BALANCE
+async function getBalance() {
+  try {
+    const res = await rest.getWalletBalance({ accountType: 'UNIFIED' });
+    return res;
+  } catch (err) {
+    console.error('❌ Failed to fetch wallet balance:', err.message || err);
+    return null;
+  }
+}
+
+// ✅ TRAILING STOP (Auto-sell logic)
+async function setTrailingStop({ symbol, trailingStop, positionIdx = 0 }) {
+  try {
+    const res = await rest.setTradingStop({
+      category: 'linear',
+      symbol,
+      trailingStop,
+      positionIdx,
+    });
+    return res;
+  } catch (err) {
+    console.error('❌ Failed to set trailing stop:', err.message || err);
+    return null;
+  }
+}
+
+// ✅ EXPORT
 module.exports = {
-  runBot
+  rest,
+  ws,
+  placeOrder,
+  getPositions,
+  getBalance,
+  setTrailingStop,
 };
