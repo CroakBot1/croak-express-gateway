@@ -1,6 +1,7 @@
 // src/bybit.js
 
-// Mock functions
+// === MOCK FUNCTIONS START ===
+
 async function getLivePrice(symbol = 'ETHUSDT') {
   console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
   return 2850; // mock price
@@ -31,9 +32,6 @@ function getMemoryState() {
   console.log(`[🧠 MOCK MEMORY] Returning default brain memory state`);
   return {
     strategyVersion: '61K Quantum v5',
-    score: 100,
-    lastAction: 'NONE',
-    history: [],
     lastTradeTime: Date.now(),
     lastSignal: 'BUY',
     memoryScore: 92.7,
@@ -41,23 +39,24 @@ function getMemoryState() {
   };
 }
 
-async function placeOrder(side = 'Buy', quantity = 1, symbol = 'ETHUSDT') {
-  console.log(`[🛒 MOCK ORDER] Placing ${side} order for ${quantity} ${symbol}`);
-  return { success: true, mock: true };
-}
-
 function resetMemoryState() {
   console.log(`[🧹 MOCK RESET] Memory state reset`);
   return true;
 }
 
-// Export all functions in one block
+async function placeOrder(side = 'Buy', quantity = 1, symbol = 'ETHUSDT') {
+  console.log(`[🛒 MOCK ORDER] Placing ${side} order for ${quantity} ${symbol}`);
+  return { success: true, mock: true };
+}
+
+// === EXPORT ALL MOCKS ===
+
 module.exports = {
   getLivePrice,
   getCandles,
   getCapital,
   getPNL,
   getMemoryState,
-  placeOrder,
   resetMemoryState,
+  placeOrder,
 };
