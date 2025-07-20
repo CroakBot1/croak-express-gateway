@@ -1,35 +1,30 @@
-// == CROAK GATEWAY FINAL V3 — Unified Express Server ==
-require('dotenv').config(); // ✅ Load .env first
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const fetch = require('node-fetch');
 const axios = require('axios');
 const crypto = require('crypto');
-const { info, error } = require('./utils/logger'); // ✅ Use logger
+const { info, error } = require('./utils/logger');
 const runAutoTrade = require('./auto-trade-runner');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// === Setup ===
-app.use(cors());
-app.use(express.json());
-
-// === Config ===
+// === ENV CONFIG ===
+const BYBIT_API_KEY = process.env.BYBIT_API_KEY;
+const BYBIT_API_SECRET = process.env.BYBIT_API_SECRET;
+const TRADE_SYMBOL = process.env.TRADE_SYMBOL || 'ETHUSDT';
+const TRADE_QTY = parseFloat(process.env.TRADE_QTY || '0.01');
 const SESSION_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
 const IP_EXPIRY_HOURS = 24;
 
-// === BYBIT KEYS FROM ENV ===
-const BYBIT_API_KEY = process.env.BYBIT_API_KEY;
-const BYBIT_API_SECRET = process.env.BYBIT_API_SECRET;
-const CROAK_MODE = process.env.CROAK_MODE || 'TEST';
-const TRADE_SYMBOL = process.env.TRADE_SYMBOL || 'ETHUSDT';
+// === MIDDLEWARE ===
+app.use(cors());
+app.use(express.json());
 
-// === Utilities ===
+// === UTILITIES ===
 function loadJSON(file) {
   try {
     return JSON.parse(fs.readFileSync(file));
@@ -49,17 +44,6 @@ function isExpired(boundAt) {
   const hoursPassed = (now - then) / (1000 * 60 * 60);
   return hoursPassed >= IP_EXPIRY_HOURS;
 }
-
-// === TRADE ROUTES (Simulation) ===
-app.post('/trade/buy', (req, res) => {
-  console.log('🟢 BUY request received:', req.body);
-  res.json({ status: 'BUY success', data: req.body });
-});
-
-app.post('/trade/sell', (req, res) => {
-  console.log('🔴 SELL request received:', req.body);
-  res.json({ status: 'SELL success', data: req.body });
-});
 
 // === UUID SYSTEM ===
 app.get('/register', (req, res) => {
@@ -111,24 +95,20 @@ app.post('/unbind-uuid', (req, res) => {
   return res.status(403).json({ unbound: false, message: '❌ IP mismatch.' });
 });
 
-// === LIVE PRICE FETCH ===
+// === BYBIT V5 PRICE ===
 app.get('/bybit-price', async (req, res) => {
   try {
-    const response = await fetch(`https://api.bybit.com/v5/market/tickers?category=linear&symbol=${TRADE_SYMBOL}`);
-    const data = await response.json();
+    const url = `https://api.bybit.com/v5/market/tickers?category=linear&symbol=${TRADE_SYMBOL}`;
+    const { data } = await axios.get(url);
     const price = parseFloat(data?.result?.list?.[0]?.lastPrice);
-
-    if (isNaN(price)) {
-      return res.status(500).json({ error: 'Invalid price from Bybit' });
-    }
-
+    if (isNaN(price)) throw new Error('Invalid price from Bybit');
     res.json({ symbol: TRADE_SYMBOL, price });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch price', details: err.message });
   }
 });
 
-// === WALLET BALANCE ===
+// === BYBIT V5 WALLET BALANCE ===
 app.get('/wallet', async (req, res) => {
   try {
     const timestamp = Date.now();
@@ -137,52 +117,76 @@ app.get('/wallet', async (req, res) => {
     const sign = crypto.createHmac('sha256', BYBIT_API_SECRET).update(queryString).digest('hex');
 
     const url = `https://api.bybit.com/v5/account/wallet-balance?accountType=UNIFIED&${queryString}&sign=${sign}`;
-    const response = await axios.get(url, {
-      headers: {
-        'X-BYBIT-API-KEY': BYBIT_API_KEY
-      }
+    const { data } = await axios.get(url, {
+      headers: { 'X-BYBIT-API-KEY': BYBIT_API_KEY }
     });
 
-    const coins = response.data?.result?.list?.[0]?.coin || [];
+    const coins = data?.result?.list?.[0]?.coin || [];
     const eth = parseFloat(coins.find(c => c.coin === 'ETH')?.availableToWithdraw || 0);
     const usdt = parseFloat(coins.find(c => c.coin === 'USDT')?.availableToWithdraw || 0);
-
     res.json({ eth, usdt });
   } catch (err) {
-    console.error('[WALLET ERROR]', err.response?.data || err.message);
     res.status(500).json({ error: 'Failed to fetch wallet', details: err.message });
   }
 });
 
-// === HEARTBEAT ===
-app.get('/heartbeat', (req, res) => {
-  console.log(`[HEARTBEAT] Ping at ${new Date().toISOString()}`);
-  res.send('❤️ CROAK alive and listening');
+// === PLACE TRADE (Buy/Sell) ===
+app.post('/trade', async (req, res) => {
+  const { side, price } = req.body;
+  if (!['Buy', 'Sell'].includes(side)) {
+    return res.status(400).json({ error: 'Invalid side. Use "Buy" or "Sell".' });
+  }
+
+  try {
+    const timestamp = Date.now();
+    const recvWindow = 5000;
+    const body = {
+      category: 'linear',
+      symbol: TRADE_SYMBOL,
+      side,
+      orderType: 'Limit',
+      qty: TRADE_QTY.toString(),
+      price: price.toString(),
+      timeInForce: 'GoodTillCancel',
+      apiKey: BYBIT_API_KEY,
+      recvWindow,
+      timestamp
+    };
+
+    const orderedKeys = Object.keys(body).sort();
+    const query = orderedKeys.map(key => `${key}=${body[key]}`).join('&');
+    const sign = crypto.createHmac('sha256', BYBIT_API_SECRET).update(query).digest('hex');
+
+    const url = `https://api.bybit.com/v5/order/create`;
+    const { data } = await axios.post(url, body, {
+      headers: {
+        'X-BYBIT-API-KEY': BYBIT_API_KEY,
+        'X-BYBIT-SIGN': sign,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ success: true, result: data });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to place trade', details: err.message });
+  }
 });
 
-// === KEEP ALIVE ===
-app.get('/keep-alive', (req, res) => {
-  console.log(`[KEEP-ALIVE] Server pinged at ${new Date().toISOString()}`);
-  res.status(200).send('🟢 Croak server is alive!');
-});
+// === DEBUG / UPTIME / DEV ===
+app.get('/dev-all', (req, res) => res.json(loadJSON(SESSION_FILE)));
+app.get('/heartbeat', (req, res) => res.send('❤️ CROAK alive'));
+app.get('/keep-alive', (req, res) => res.status(200).send('🟢 Croak server is alive!'));
 
-// === DEV DEBUG ROUTE ===
-app.get('/dev-all', (req, res) => {
-  res.json(loadJSON(SESSION_FILE));
-});
-
-// === START SERVER ===
+// === START CROAK SERVER ===
 app.listen(PORT, () => {
   info(`🚀 Unified Croak Gateway running on port ${PORT}`);
 });
 
-// === START AUTO TRADING BOT ===
+// === RUN AUTO TRADER ===
 (async () => {
   try {
-    if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
+    if (!BYBIT_API_KEY || !BYBIT_API_SECRET)
       throw new Error('API Key & Secret are both required for private endpoints');
-    }
-
     await runAutoTrade();
     info('🧠 Auto-trade bot loaded successfully');
   } catch (err) {
