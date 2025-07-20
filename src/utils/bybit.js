@@ -1,51 +1,73 @@
 // src/utils/bybit.js
 
-module.exports = {
-  buy: async (symbol, qty) => {
-    console.log(`[🟢 MOCK BUY] Symbol: ${symbol}, Qty: ${qty}`);
-    return { success: true };
-  },
+function getCandles(symbol) {
+  console.log(`[🕯️ MOCK CANDLES] Fetching mock candles for ${symbol}`);
+  const now = Date.now();
+  return Array.from({ length: 30 }).map((_, i) => ({
+    timestamp: now - (30 - i) * 60 * 1000,
+    open: 2800 + Math.random() * 100,
+    close: 2800 + Math.random() * 100,
+    high: 2900 + Math.random() * 100,
+    low: 2700 + Math.random() * 100,
+    volume: Math.random() * 1000,
+  }));
+}
 
-  sell: async (symbol, qty) => {
-    console.log(`[🔴 MOCK SELL] Symbol: ${symbol}, Qty: ${qty}`);
-    return { success: true };
-  },
+function getLivePrice(symbol) {
+  const price = 2850 + Math.random() * 50;
+  console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}, Price: ${price.toFixed(2)}`);
+  return price;
+}
 
-  getBalance: async () => {
-    console.log(`[💰 MOCK BALANCE] Returning fake balance`);
-    return { balance: 9999 };
-  },
-
-  getCapital: async () => {
-    console.log(`[💰 MOCK CAPITAL] Returning default 1000 USDT`);
-    return 1000;
-  },
-
-  getCandles: async (symbol = "ETHUSDT", interval = "1m", limit = 100) => {
-    console.log(`[📊 MOCK CANDLES] Symbol: ${symbol}, Interval: ${interval}, Limit: ${limit}`);
-    const candles = Array.from({ length: limit }, (_, i) => ({
-      open: 2800 + i,
-      high: 2850 + i,
-      low: 2750 + i,
-      close: 2820 + i,
-      volume: 1000 + i
-    }));
-    return candles;
-  },
-
-  getLivePrice: async (symbol = "ETHUSDT") => {
-    console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
-    return 2830.25;
-  },
-
-  getPnL: async (entryPrice, currentPrice, qty, side) => {
+function getPnL(entryPrice, currentPrice, qty, side) {
+  if (!entryPrice || !currentPrice || !qty || !side) {
     console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}`);
-    let pnl = 0;
-    if (side === 'LONG' || side === 'Buy') {
-      pnl = (currentPrice - entryPrice) * qty;
-    } else if (side === 'SHORT' || side === 'Sell') {
-      pnl = (entryPrice - currentPrice) * qty;
-    }
-    return { pnl };
+    return 0;
   }
+
+  const direction = side.toUpperCase() === "LONG" ? 1 : -1;
+  const pnl = (currentPrice - entryPrice) * qty * direction;
+  console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}, PnL: ${pnl}`);
+  return pnl;
+}
+
+function getCapital() {
+  const capital = 1000;
+  console.log(`[💰 MOCK CAPITAL] Returning default ${capital} USDT`);
+  return capital;
+}
+
+function executeTrade(symbol, side, qty) {
+  const price = getLivePrice(symbol);
+  const ts = Date.now();
+  console.log(`[✅ MOCK TRADE EXECUTED] ${side.toUpperCase()} ${qty} ${symbol} @ ${price} (timestamp: ${ts})`);
+  return {
+    status: "FILLED",
+    symbol,
+    side,
+    qty,
+    price,
+    timestamp: ts,
+  };
+}
+
+function getMemoryState() {
+  console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
+  return {
+    lastDecision: null,
+    tradeCount: 0,
+    lastTradeTimestamp: null,
+    memoryScore: 0,
+    lastPNL: 0,
+  };
+}
+
+// ✅ Proper export
+module.exports = {
+  getCandles,
+  getLivePrice,
+  getPnL,
+  getCapital,
+  executeTrade,
+  getMemoryState,
 };
