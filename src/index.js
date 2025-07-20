@@ -25,6 +25,7 @@ const IP_EXPIRY_HOURS = 24;
 const BYBIT_API_KEY = process.env.BYBIT_API_KEY;
 const BYBIT_API_SECRET = process.env.BYBIT_API_SECRET;
 const CROAK_MODE = process.env.CROAK_MODE || 'TEST';
+const TRADE_SYMBOL = process.env.TRADE_SYMBOL || 'ETHUSDT';
 
 // === Utilities ===
 function loadJSON(file) {
@@ -108,10 +109,10 @@ app.post('/unbind-uuid', (req, res) => {
   return res.status(403).json({ unbound: false, message: '❌ IP mismatch.' });
 });
 
-// === LIVE PRICE FETCH (ETHUSDT) ===
+// === LIVE PRICE FETCH (ETHUSDT or from .env) ===
 app.get('/bybit-price', async (req, res) => {
   try {
-    const response = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=ETHUSDT');
+    const response = await fetch(`https://api.bybit.com/v5/market/tickers?category=linear&symbol=${TRADE_SYMBOL}`);
     const data = await response.json();
     const price = parseFloat(data?.result?.list?.[0]?.lastPrice);
 
@@ -119,7 +120,7 @@ app.get('/bybit-price', async (req, res) => {
       return res.status(500).json({ error: 'Invalid price from Bybit' });
     }
 
-    res.json({ price });
+    res.json({ symbol: TRADE_SYMBOL, price });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch price', details: err.message });
   }
