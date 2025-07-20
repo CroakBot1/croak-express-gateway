@@ -1,24 +1,13 @@
-// === backend-trader/index.js ===
-require('dotenv').config();
-const { fetchPrice } = require('./core/priceFetcher');
-const { shouldBuy, shouldSell } = require('./core/strategyEngine');
-const { executeTrade } = require('./core/uniswapExecutor');
-const fs = require('fs');
+// index.js
 
-async function loop() {
-  try {
-    const price = await fetchPrice();
-    const log = `[${new Date().toISOString()}] Price: $${price}\n`;
-    fs.appendFileSync('./log/trade.log', log);
+console.log("✅ CROAK BOT 24/7 is now running...");
 
-    if (shouldBuy(price)) {
-      await executeTrade('buy');
-    } else if (shouldSell(price)) {
-      await executeTrade('sell');
-    }
-  } catch (err) {
-    console.error('Loop Error:', err);
-  }
-}
+// Example loop for autotrade every X seconds
+setInterval(() => {
+  const now = new Date().toLocaleString();
+  console.log(`[${now}] 🟢 Auto-check triggered (insert trade logic here)`);
 
-setInterval(loop, 15000); // run every 15s
+  // Call your trade logic here
+  // e.g., checkPriceAndTrade();
+
+}, 10 * 1000); // every 10 seconds
