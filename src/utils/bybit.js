@@ -1,73 +1,58 @@
 // src/utils/bybit.js
 
-function getCandles(symbol) {
-  console.log(`[🕯️ MOCK CANDLES] Fetching mock candles for ${symbol}`);
-  const now = Date.now();
-  return Array.from({ length: 30 }).map((_, i) => ({
-    timestamp: now - (30 - i) * 60 * 1000,
-    open: 2800 + Math.random() * 100,
-    close: 2800 + Math.random() * 100,
-    high: 2900 + Math.random() * 100,
-    low: 2700 + Math.random() * 100,
-    volume: Math.random() * 1000,
-  }));
+export function formatPrice(price, decimals = 2) {
+  return parseFloat(price).toFixed(decimals);
 }
 
-function getLivePrice(symbol) {
-  const price = 2850 + Math.random() * 50;
-  console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}, Price: ${price.toFixed(2)}`);
-  return price;
+export function calculateTP(entryPrice, side, percent = 1.5) {
+  const ratio = percent / 100;
+  return side === 'Long'
+    ? entryPrice * (1 + ratio)
+    : entryPrice * (1 - ratio);
 }
 
-function getPnL(entryPrice, currentPrice, qty, side) {
-  if (!entryPrice || !currentPrice || !qty || !side) {
-    console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}`);
-    return 0;
+export function calculateSL(entryPrice, side, percent = 0.8) {
+  const ratio = percent / 100;
+  return side === 'Long'
+    ? entryPrice * (1 - ratio)
+    : entryPrice * (1 + ratio);
+}
+
+export function calculateSize(capital, price, leverage = 10) {
+  if (!capital || !price) return 0;
+  const positionValue = capital * leverage;
+  return positionValue / price;
+}
+
+export function isVolatile(changePct, threshold = 1.0) {
+  return Math.abs(changePct) >= threshold;
+}
+
+export function classifyTrend(changePct) {
+  if (changePct >= 2) return '🚀 STRONG BULL';
+  if (changePct >= 0.5) return '📈 Mild Bull';
+  if (changePct <= -2) return '💥 STRONG BEAR';
+  if (changePct <= -0.5) return '📉 Mild Bear';
+  return '⚖️ Sideways';
+}
+
+export function scoreConfidence(memoryScore) {
+  if (memoryScore >= 90) return '🔵 Ultra High';
+  if (memoryScore >= 75) return '🟢 High';
+  if (memoryScore >= 50) return '🟡 Moderate';
+  return '🔴 Low';
+}
+
+export function adjustTPBasedOnVolatility(entryPrice, side, changePct) {
+  let tpPercent = 1.2;
+
+  if (Math.abs(changePct) >= 2.5) {
+    tpPercent = 2.5;
+  } else if (Math.abs(changePct) >= 1.5) {
+    tpPercent = 2.0;
+  } else if (Math.abs(changePct) >= 0.8) {
+    tpPercent = 1.5;
   }
 
-  const direction = side.toUpperCase() === "LONG" ? 1 : -1;
-  const pnl = (currentPrice - entryPrice) * qty * direction;
-  console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}, PnL: ${pnl}`);
-  return pnl;
+  return calculateTP(entryPrice, side, tpPercent);
 }
-
-function getCapital() {
-  const capital = 1000;
-  console.log(`[💰 MOCK CAPITAL] Returning default ${capital} USDT`);
-  return capital;
-}
-
-function executeTrade(symbol, side, qty) {
-  const price = getLivePrice(symbol);
-  const ts = Date.now();
-  console.log(`[✅ MOCK TRADE EXECUTED] ${side.toUpperCase()} ${qty} ${symbol} @ ${price} (timestamp: ${ts})`);
-  return {
-    status: "FILLED",
-    symbol,
-    side,
-    qty,
-    price,
-    timestamp: ts,
-  };
-}
-
-function getMemoryState() {
-  console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
-  return {
-    lastDecision: null,
-    tradeCount: 0,
-    lastTradeTimestamp: null,
-    memoryScore: 0,
-    lastPNL: 0,
-  };
-}
-
-// ✅ Proper export
-module.exports = {
-  getCandles,
-  getLivePrice,
-  getPnL,
-  getCapital,
-  executeTrade,
-  getMemoryState,
-};
