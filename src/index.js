@@ -1,11 +1,13 @@
 // == CROAK GATEWAY FINAL V3 — Unified Express Server ==
+require('dotenv').config(); // ✅ Load .env first
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const fetch = require('node-fetch');
 const axios = require('axios');
-const crypto = require('crypto'); // For wallet signing
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,9 +21,9 @@ const SESSION_FILE = 'uuids.json';
 const VALID_UUIDS_FILE = 'valid-uuids.json';
 const IP_EXPIRY_HOURS = 24;
 
-// === BYBIT KEYS (replace with real ones or load from .env) ===
-const BYBIT_API_KEY = 'YOUR_API_KEY_HERE';
-const BYBIT_API_SECRET = 'YOUR_API_SECRET_HERE';
+// === BYBIT KEYS FROM ENV ===
+const BYBIT_API_KEY = process.env.BYBIT_API_KEY;
+const BYBIT_API_SECRET = process.env.BYBIT_API_SECRET;
 
 // === Utilities ===
 function loadJSON(file) {
@@ -122,17 +124,15 @@ app.get('/bybit-price', async (req, res) => {
   }
 });
 
-// === WALLET BALANCE CHECK (BYBIT v5 Unified Account) ===
+// === WALLET BALANCE CHECK ===
 app.get('/wallet', async (req, res) => {
   try {
     const timestamp = Date.now();
     const recvWindow = 5000;
-
     const queryString = `apiKey=${BYBIT_API_KEY}&recvWindow=${recvWindow}&timestamp=${timestamp}`;
     const sign = crypto.createHmac('sha256', BYBIT_API_SECRET).update(queryString).digest('hex');
 
     const url = `https://api.bybit.com/v5/account/wallet-balance?accountType=UNIFIED&${queryString}&sign=${sign}`;
-
     const response = await axios.get(url, {
       headers: {
         'X-BYBIT-API-KEY': BYBIT_API_KEY
@@ -163,7 +163,7 @@ app.get('/keep-alive', (req, res) => {
   res.status(200).send('🟢 Croak server is alive!');
 });
 
-// === DEV DEBUG ROUTE (TEMP) ===
+// === DEV DEBUG ROUTE ===
 app.get('/dev-all', (req, res) => {
   res.json(loadJSON(SESSION_FILE));
 });
