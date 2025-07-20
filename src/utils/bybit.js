@@ -1,7 +1,16 @@
+// src/utils/bybit.js
+
+require('dotenv').config(); // ✅ Load .env at the top
 const { LinearClient } = require('bybit-api');
 const axios = require('axios');
-const logger = require('./logger'); // ✅ fixed path
+const logger = require('./logger');
 
+// 🔐 Validate API credentials
+if (!process.env.BYBIT_API_KEY || !process.env.BYBIT_API_SECRET) {
+  throw new Error('❌ API Key & Secret are required in .env for Bybit client');
+}
+
+// 🔧 Initialize Bybit client
 const client = new LinearClient({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
