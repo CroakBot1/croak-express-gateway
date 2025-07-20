@@ -40,10 +40,11 @@ function getCapital() {
 function getMemoryState() {
   console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
   return {
-    lastAction: "NONE",
-    confidenceScore: 0.5,
-    recentPnL: 0,
-    lastTradeTime: Date.now() - 30000,
+    lastDecision: null,
+    tradeCount: 0,
+    lastTradeTimestamp: null,
+    memoryScore: 0,
+    lastPNL: 0,
   };
 }
 
