@@ -1,138 +1,156 @@
-// == BYBIT CLIENT WRAPPER ==
-// Handles connection, orders, price, PnL, and internal state.
+// == BYBIT CLIENT WRAPPER (V5 API) ==
+// Updated to support Bybit's new V5 unified API
 
-const { LinearClient } = require('bybit-api');
-const axios = require('axios');
-const logger = require('./logger');
+const axios = require("axios");
+const crypto = require("crypto");
+const logger = require("./logger");
 
-// 🔐 Hardcoded API credentials (⚠️ Only for private/local use)
-const BYBIT_API_KEY = 'fwYKsTQ84XIyRhnG4g';
-const BYBIT_API_SECRET = 'dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT';
+const BASE_URL = "https://api.bybit.com";
+const API_KEY = "fwYKsTQ84XIyRhnG4g";
+const API_SECRET = "dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT";
 
-// =============================
-// ✅ DEBUG LOGGING
-// =============================
-console.log('[🛠 DEBUG] BYBIT_API_KEY is', BYBIT_API_KEY ? 'SET' : 'MISSING');
-console.log('[🛠 DEBUG] BYBIT_API_SECRET is', BYBIT_API_SECRET ? 'SET' : 'MISSING');
+console.log("[🛠 DEBUG] BYBIT_API_KEY is", API_KEY ? "SET" : "MISSING");
+console.log("[🛠 DEBUG] BYBIT_API_SECRET is", API_SECRET ? "SET" : "MISSING");
 
-// ✅ FIX: Correct initialization format
-let client;
-try {
-  if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
-    throw new Error('❌ API Key & Secret are required for private endpoints');
-  }
+// =============== 🔐 SIGNING FUNCTION ===============
+function signRequest(params) {
+  const sorted = Object.keys(params)
+    .sort()
+    .reduce((obj, key) => {
+      obj[key] = params[key];
+      return obj;
+    }, {});
 
-  client = new LinearClient(BYBIT_API_KEY, BYBIT_API_SECRET, false); // false = MAINNET
-  logger.info('✅ Bybit client initialized');
-} catch (err) {
-  logger.error('❌ Failed to initialize Bybit client:', err.message || err);
-  throw err;
+  const query = Object.entries(sorted)
+    .map(([key, val]) => `${key}=${val}`)
+    .join("&");
+
+  const hash = crypto.createHmac("sha256", API_SECRET).update(query).digest("hex");
+  return hash;
 }
 
-// =============================
-// 🔄 MARKET EXECUTION
-// =============================
+// =============== ⚙️ AUTH REQUEST WRAPPER ===============
+async function privateRequest(method, endpoint, params = {}) {
+  const timestamp = Date.now().toString();
 
-async function placeMarketOrder(symbol, side, qty) {
+  const query = {
+    apiKey: API_KEY,
+    timestamp,
+    recvWindow: 5000,
+    ...params,
+  };
+
+  const sign = signRequest(query);
+  const finalParams = { ...query, sign };
+
   try {
-    const response = await client.placeActiveOrder({
-      symbol,
-      side, // "Buy" or "Sell"
-      order_type: "Market",
-      qty,
-      time_in_force: "GoodTillCancel",
-      reduce_only: false,
-      close_on_trigger: false,
+    const res = await axios({
+      method,
+      url: `${BASE_URL}${endpoint}`,
+      params: finalParams,
     });
-    logger.info(`[LIVE ORDER] ${side} ${qty} ${symbol}`, response);
-    return response;
+    return res.data.result;
   } catch (err) {
-    logger.error("❌ LIVE ORDER ERROR", err.message || err);
+    logger.error(`❌ ${endpoint} ERROR`, err.response?.data || err.message);
     return null;
   }
 }
 
-// =============================
-// 📈 PRICE DATA
-// =============================
-
+// =============== 📈 MARKET DATA (PUBLIC) ===============
 async function getCandles(symbol = "ETHUSDT", interval = "1") {
   try {
-    const res = await client.getKline({ symbol, interval, limit: 200 });
-    return res.result.map(c => ({
-      timestamp: c.open_time,
-      open: parseFloat(c.open),
-      high: parseFloat(c.high),
-      low: parseFloat(c.low),
-      close: parseFloat(c.close),
-      volume: parseFloat(c.volume),
+    const { list } = (await axios.get(`${BASE_URL}/v5/market/kline`, {
+      params: {
+        category: "linear",
+        symbol,
+        interval,
+        limit: 200,
+      },
+    })).data.result;
+
+    return list.map(c => ({
+      timestamp: Number(c[0]),
+      open: parseFloat(c[1]),
+      high: parseFloat(c[2]),
+      low: parseFloat(c[3]),
+      close: parseFloat(c[4]),
+      volume: parseFloat(c[5]),
     }));
   } catch (err) {
-    logger.error("❌ CANDLES ERROR", err.message || err);
+    logger.error("❌ CANDLES ERROR", err.message);
     return [];
   }
 }
 
 async function getLivePrice(symbol = "ETHUSDT") {
   try {
-    const res = await axios.get(`https://api.bybit.com/v2/public/tickers?symbol=${symbol}`);
-    const price = parseFloat(res.data.result[0].last_price);
+    const { list } = (await axios.get(`${BASE_URL}/v5/market/tickers`, {
+      params: {
+        category: "linear",
+        symbol,
+      },
+    })).data.result;
+
+    const price = parseFloat(list[0].lastPrice);
     logger.info(`[📈 LIVE PRICE] ${symbol}: ${price}`);
     return price;
   } catch (err) {
-    logger.error("❌ LIVE PRICE ERROR", err.message || err);
+    logger.error("❌ LIVE PRICE ERROR", err.message);
     return 0;
   }
 }
 
-// =============================
-// 💼 WALLET / POSITIONS
-// =============================
-
+// =============== 💼 ACCOUNT DATA (PRIVATE) ===============
 async function getWalletBalance(coin = "USDT") {
-  try {
-    const res = await client.getWalletBalance({ coin });
-    const balance = res.result[coin]?.available_balance || 0;
-    logger.info(`[💰 BALANCE] ${coin}: ${balance}`);
-    return balance;
-  } catch (err) {
-    logger.error("❌ GET BALANCE ERROR", err.message || err);
-    return 0;
-  }
+  const res = await privateRequest("GET", "/v5/account/wallet-balance", {
+    accountType: "UNIFIED",
+  });
+  const balance = res?.list?.[0]?.coin?.find(c => c.coin === coin)?.availableToWithdraw || 0;
+  logger.info(`[💰 BALANCE] ${coin}: ${balance}`);
+  return parseFloat(balance);
 }
 
-async function getCapital(symbol = "ETHUSDT") {
+async function getCapital() {
   return await getWalletBalance("USDT");
 }
 
 async function getOpenPositions(symbol = "ETHUSDT") {
-  try {
-    const res = await client.getPositionList({ symbol });
-    return res.result || [];
-  } catch (err) {
-    logger.error("❌ POSITION ERROR", err.message || err);
-    return [];
-  }
+  const res = await privateRequest("GET", "/v5/position/list", {
+    category: "linear",
+    symbol,
+  });
+  return res?.list || [];
 }
 
 async function getPnL(symbol = "ETHUSDT") {
-  try {
-    const positions = await getOpenPositions(symbol);
-    if (!positions.length) return 0;
-    const pos = positions[0];
-    const pnl = parseFloat(pos.unrealised_pnl || 0);
-    logger.info(`[📊 PnL] ${symbol}: ${pnl}`);
-    return pnl;
-  } catch (err) {
-    logger.error("❌ PnL ERROR", err.message || err);
-    return 0;
-  }
+  const positions = await getOpenPositions(symbol);
+  if (!positions.length) return 0;
+  const pos = positions[0];
+  const pnl = parseFloat(pos.unrealisedPnl || 0);
+  logger.info(`[📊 PnL] ${symbol}: ${pnl}`);
+  return pnl;
 }
 
-// =============================
-// 🧠 INTERNAL MEMORY STATE
-// =============================
+// =============== 🛒 ORDER EXECUTION ===============
+async function placeMarketOrder(symbol, side, qty) {
+  const res = await privateRequest("POST", "/v5/order/create", {
+    category: "linear",
+    symbol,
+    side, // "Buy" or "Sell"
+    orderType: "Market",
+    qty,
+    timeInForce: "GoodTillCancel",
+  });
+  logger.info(`[LIVE ORDER] ${side} ${qty} ${symbol}`, res);
+  return res;
+}
 
+async function executeTrade(symbol, action, qty) {
+  const side = action.toUpperCase() === "BUY" ? "Buy" : "Sell";
+  return await placeMarketOrder(symbol, side, qty);
+}
+
+// =============== 🧠 MEMORY ===============
 let memoryState = {};
 
 function getMemoryState() {
@@ -149,19 +167,7 @@ function resetState() {
   logger.warn("[🔄 STATE RESET]");
 }
 
-// =============================
-// 🔁 TRADE WRAPPER
-// =============================
-
-async function executeTrade(symbol, action, qty) {
-  const side = action.toUpperCase() === 'BUY' ? 'Buy' : 'Sell';
-  return await placeMarketOrder(symbol, side, qty);
-}
-
-// =============================
-// 🔚 EXPORTS
-// =============================
-
+// =============== 📦 EXPORTS ===============
 module.exports = {
   getCandles,
   getLivePrice,
