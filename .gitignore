@@ -23,5 +23,6 @@ git add src/logger.js
 git commit -m "Add heartbeat function to logger"
 git push
 git add src/bybit.js
-git commit -m "Add mock bybit.js to fix missing function exports"
+git commit -m "🔥 Fix: Added mock implementations for all missing bybit functions"
 git push
+
