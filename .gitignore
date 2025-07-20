@@ -8,3 +8,6 @@ git push
 git add package.json index.js
 git commit -m "🚀 Fix: Add working package.json and entry index.js"
 git push origin main
+git add .
+git commit -m "Move package.json and index.js to root"
+git push origin main
