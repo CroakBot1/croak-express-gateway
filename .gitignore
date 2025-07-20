@@ -41,4 +41,7 @@ git push
 git add src/logger.js
 git commit -m "🧠 Add logger.js to fix Render startup error"
 git push origin main
+git add .
+git commit -m "Patch: Load .env and inject BYBIT keys securely"
+git push
 
