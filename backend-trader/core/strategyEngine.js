@@ -1,25 +1,17 @@
-// strategyEngine.js
-const getETHPrice = require('./priceFetcher');
-const brain = require('./brain');
-const swapETHForToken = require('./uniswapExecutor');
+let lastPrice = null;
 
-let memory = {};
-
-async function runLoop() {
-  const price = await getETHPrice();
-  if (!price) return;
-
-  const decision = brain.analyzeCandle({ price }, memory);
-
-  console.log(`[🧠 BRAIN] Action: ${decision.action} | Score: ${decision.confidence}`);
-
-  if (decision.action === 'BUY') {
-    await swapETHForToken("0xTokenYouWantToBuy", "0.01"); // 0.01 ETH
-    console.log("✅ Bought token");
+function shouldBuy(price) {
+  if (!lastPrice) {
+    lastPrice = price;
+    return false;
   }
-
-  // TODO: Add SELL logic (reverse swap)
+  const result = price < lastPrice * 0.995; // 0.5% drop
+  lastPrice = price;
+  return result;
 }
 
-module.exports = runLoop;
+function shouldSell(price) {
+  return price > lastPrice * 1.01; // 1% gain
+}
 
+module.exports = { shouldBuy, shouldSell };
