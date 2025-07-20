@@ -25,4 +25,8 @@ git push
 git add src/bybit.js
 git commit -m "🔥 Fix: Added mock implementations for all missing bybit functions"
 git push
+cd your-project-folder
+git add bybit.js
+git commit -m "🟢 Add working bybit.js with mock functions and getMemoryState()"
+git push origin main  # or whatever your branch is
 
