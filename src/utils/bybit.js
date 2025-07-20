@@ -16,10 +16,9 @@ module.exports = {
     return { balance: 9999 };
   },
 
-  getCandles: async (symbol, interval, limit = 100) => {
+  getCandles: async (symbol, interval = "1m", limit = 100) => {
     console.log(`[📊 MOCK CANDLES] Symbol: ${symbol}, Interval: ${interval}, Limit: ${limit}`);
     
-    // Dummy candles: OHLCV pattern (open, high, low, close, volume)
     const candles = Array.from({ length: limit }, (_, i) => ({
       open: 2800 + i,
       high: 2850 + i,
@@ -29,5 +28,10 @@ module.exports = {
     }));
 
     return candles;
+  },
+
+  getLivePrice: async (symbol) => {
+    console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
+    return 2830.25; // fake live price
   }
 };
