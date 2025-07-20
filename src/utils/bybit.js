@@ -1,17 +1,13 @@
 // == BYBIT CLIENT WRAPPER ==
 // Handles connection, orders, price, PnL, and internal state.
 
-require('dotenv').config();
 const { LinearClient } = require('bybit-api');
 const axios = require('axios');
 const logger = require('./logger');
 
-// 🔐 Validate .env credentials
-const { BYBIT_API_KEY, BYBIT_API_SECRET } = process.env;
-
-if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
-  throw new Error('❌ API Key & Secret are required in .env for Bybit client');
-}
+// 🔐 Hardcoded API credentials (⚠️ Only for private/local use)
+const BYBIT_API_KEY = 'fwYKsTQ84XIyRhnG4g';
+const BYBIT_API_SECRET = 'dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT';
 
 // 🔧 Initialize Bybit client
 const client = new LinearClient({
