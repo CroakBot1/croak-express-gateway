@@ -1,13 +1,14 @@
 // == BYBIT CLIENT WRAPPER (V5 API) ==
 // Updated to support Bybit's new V5 unified API
 
+require("dotenv").config();
 const axios = require("axios");
 const crypto = require("crypto");
 const logger = require("./logger");
 
-const BASE_URL = "https://api.bybit.com";
-const API_KEY = "fwYKsTQ84XIyRhnG4g";
-const API_SECRET = "dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT";
+const BASE_URL = process.env.BYBIT_API_URL || "https://api.bybit.com";
+const API_KEY = process.env.BYBIT_API_KEY;
+const API_SECRET = process.env.BYBIT_API_SECRET;
 
 console.log("[🛠 DEBUG] BYBIT_API_KEY is", API_KEY ? "SET" : "MISSING");
 console.log("[🛠 DEBUG] BYBIT_API_SECRET is", API_SECRET ? "SET" : "MISSING");
