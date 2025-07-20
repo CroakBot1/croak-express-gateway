@@ -35,4 +35,7 @@ git push origin main
 git add package.json
 git commit -m "Add bybit-api dependency"
 git push origin main
+git add src/logger.js
+git commit -m "Add logger utility for backend logs"
+git push
 
