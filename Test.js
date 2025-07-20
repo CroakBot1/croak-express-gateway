@@ -1,23 +1,26 @@
 // test.js
 const { LinearClient } = require('bybit-api');
 
-// Hardcoded API credentials (test purpose only)
-const API_KEY = 'fwYKsTQ84XIyRhnG4g';
-const API_SECRET = 'dMBJSCa0GyZWhPBIz8qzEquUlMcxqRXLFHcT';
+// 🟢 DIRECTLY HARD-CODE YOUR KEYS HERE (if not using .env)
+const BYBIT_API_KEY = 'YOUR_API_KEY_HERE';
+const BYBIT_API_SECRET = 'YOUR_API_SECRET_HERE';
 
-const client = new LinearClient({
-  key: API_KEY,
-  secret: API_SECRET,
-  testnet: false, // true if you're using testnet
-});
+// 🔧 Create client (use false for MAINNET, true for TESTNET)
+const client = new LinearClient(
+  BYBIT_API_KEY,
+  BYBIT_API_SECRET,
+  false
+);
 
-async function testConnection() {
+// ✅ Example function to check wallet balance
+async function checkBalance() {
   try {
-    const result = await client.getWalletBalance({ coin: 'USDT' });
-    console.log('✅ Connected. Wallet Balance:', result);
-  } catch (error) {
-    console.error('❌ Error:', error.message || error);
+    const response = await client.getWalletBalance('USDT');
+    console.log('🪙 Wallet Balance (USDT):', response);
+  } catch (err) {
+    console.error('❌ Error getting wallet balance:', err.message || err);
   }
 }
 
-testConnection();
+// 🔁 Run the test
+checkBalance();
