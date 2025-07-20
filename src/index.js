@@ -24,6 +24,7 @@ const IP_EXPIRY_HOURS = 24;
 // === BYBIT KEYS FROM ENV ===
 const BYBIT_API_KEY = process.env.BYBIT_API_KEY;
 const BYBIT_API_SECRET = process.env.BYBIT_API_SECRET;
+const CROAK_MODE = process.env.CROAK_MODE || 'TEST';
 
 // === Utilities ===
 function loadJSON(file) {
@@ -173,8 +174,12 @@ app.listen(PORT, () => {
   console.log(`🚀 Unified Croak Gateway running on port ${PORT}`);
 });
 
-// === START AUTO TRADING BOT ===
+// === START AUTO TRADING BOT (Only if .env is properly set) ===
 try {
+  if (!BYBIT_API_KEY || !BYBIT_API_SECRET) {
+    throw new Error('API Key & Secret are both required for private endpoints');
+  }
+
   require('./auto-trade-runner');
   console.log('🧠 Auto-trade bot loaded successfully');
 } catch (err) {
