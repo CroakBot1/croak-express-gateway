@@ -62,12 +62,12 @@ function getMemoryState() {
   };
 }
 
-// ✅ FIXED: Ensure all functions are included in the module.exports
+// ✅ Proper export
 module.exports = {
   getCandles,
   getLivePrice,
   getPnL,
   getCapital,
   executeTrade,
-  getMemoryState, // <- make sure this is included
+  getMemoryState,
 };
