@@ -1,17 +1,20 @@
 {
-  "name": "backend-trader",
+  "name": "croak-express-gateway",
   "version": "1.0.0",
+  "description": "Croak Express Gateway Server",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "type": "module",
+  "keywords": [],
+  "author": "Agawon",
+  "license": "MIT",
+  "type": "commonjs",
   "dependencies": {
-    "axios": "^1.6.0",
-    "dotenv": "^16.0.0",
-    "ethers": "^6.0.0",
-    "node-fetch": "^3.3.2",
-    "@ethersproject/solidity": "^5.0.0-beta",
-    "@uniswap/sdk": "^3.0.3"
+    "axios": "^1.6.8",
+    "bybit-api": "^3.2.5",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "node-fetch": "^2.6.11"
   }
 }
