@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-// 🕯️ Fetch historical candles (default 1m)
+// ✅ CANDLE DATA
 async function getCandles(symbol = 'ETHUSDT', interval = '1', limit = 50) {
   try {
     const response = await axios.get('https://api.bybit.com/v5/market/kline', {
@@ -19,7 +19,7 @@ async function getCandles(symbol = 'ETHUSDT', interval = '1', limit = 50) {
       low: parseFloat(candle[3]),
       close: parseFloat(candle[4]),
       volume: parseFloat(candle[5])
-    })).reverse(); // oldest to newest
+    })).reverse();
 
     return candles;
   } catch (error) {
@@ -28,14 +28,17 @@ async function getCandles(symbol = 'ETHUSDT', interval = '1', limit = 50) {
   }
 }
 
-// 💸 Fetch live price (last traded price)
+// ✅ FIXED PRICE FETCHER
 async function getLivePrice(symbol = 'ETHUSDT') {
   try {
-    const response = await axios.get('https://api.bybit.com/v2/public/tickers', {
-      params: { symbol }
+    const response = await axios.get('https://api.bybit.com/v5/market/tickers', {
+      params: {
+        category: 'linear',
+        symbol
+      }
     });
 
-    const price = parseFloat(response.data.result[0].last_price);
+    const price = parseFloat(response.data.result.list[0].lastPrice);
     return price;
   } catch (error) {
     console.error('[❌ getLivePrice ERROR]', error.message);
@@ -43,7 +46,16 @@ async function getLivePrice(symbol = 'ETHUSDT') {
   }
 }
 
+// ✅ MOCK PnL READER
+async function getPnL(symbol = 'ETHUSDT') {
+  return {
+    unrealizedPnl: 12.34,
+    percentage: 3.21
+  };
+}
+
 module.exports = {
   getCandles,
-  getLivePrice
+  getLivePrice,
+  getPnL
 };
