@@ -32,6 +32,19 @@ module.exports = {
 
   getLivePrice: async (symbol) => {
     console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
-    return 2830.25; // fake live price
+    return 2830.25;
+  },
+
+  getPnL: async (entryPrice, currentPrice, qty, side) => {
+    console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}`);
+
+    let pnl = 0;
+    if (side === 'LONG') {
+      pnl = (currentPrice - entryPrice) * qty;
+    } else if (side === 'SHORT') {
+      pnl = (entryPrice - currentPrice) * qty;
+    }
+
+    return { pnl };
   }
 };
