@@ -3,14 +3,18 @@ const { brainDecision } = require("./brain");
 const bybit = require("./utils/bybit");
 const logger = require("./utils/logger");
 
-const SYMBOL = "ETHUSDT"; // or load dynamically
+const SYMBOL = "ETHUSDT";
 const QTY = parseFloat(process.env.DEFAULT_QTY || 0.05);
+const TRAILING_STOP_PERCENT = 0.5; // Adjust trailing stop %
+
+let trailingStopActive = false;
+let highestPrice = 0;
 
 // 🔁 AUTO LOOP
 const runAutoTrade = async () => {
   while (true) {
     try {
-      // 1. Fetch real-time data (candles, price, volume, etc.)
+      // 🧠 Fetch live data
       const candles = await bybit.getCandles(SYMBOL);
       const livePrice = await bybit.getLivePrice(SYMBOL);
       const volume = candles.at(-1)?.volume || 0;
@@ -19,7 +23,7 @@ const runAutoTrade = async () => {
       const capital = await bybit.getCapital();
       const memoryState = await bybit.getMemoryState();
 
-      // 2. Make brain decision
+      // 🤖 Brain decision
       const decision = brainDecision({
         candles,
         memoryState,
@@ -32,21 +36,47 @@ const runAutoTrade = async () => {
         externalOverride: null,
       });
 
-      console.log(`[🧠 DECISION]`, decision);
+      logger.decision(decision.action, decision.confidence, decision.reasons);
 
-      // 3. Execute trade
-      if (decision.action === "buy" || decision.action === "sell") {
-        await bybit.executeTrade(SYMBOL, decision.action, QTY);
-        console.log(`[🚀 TRADE EXECUTED] ${decision.action.toUpperCase()} @ ${livePrice}`);
-      } else {
-        console.log("[⏳ WAITING] No valid signal...");
+      // 🟢 Execute BUY
+      if (decision.action === "buy") {
+        await bybit.executeTrade(SYMBOL, "buy", QTY);
+        logger.execution("BUY", livePrice, QTY, SYMBOL);
+        trailingStopActive = true;
+        highestPrice = livePrice;
       }
 
-      // 4. Track decision (optional log to DB)
+      // 🔴 Execute SELL
+      else if (decision.action === "sell") {
+        await bybit.executeTrade(SYMBOL, "sell", QTY);
+        logger.execution("SELL", livePrice, QTY, SYMBOL);
+        trailingStopActive = false;
+        highestPrice = 0;
+      }
+
+      // 📉 Trailing Stop Logic
+      else if (trailingStopActive) {
+        if (livePrice > highestPrice) highestPrice = livePrice;
+
+        const stopTrigger = highestPrice * (1 - TRAILING_STOP_PERCENT / 100);
+
+        if (livePrice < stopTrigger) {
+          await bybit.executeTrade(SYMBOL, "sell", QTY);
+          logger.execution("TRAILING STOP SELL", livePrice, QTY, SYMBOL);
+          trailingStopActive = false;
+          highestPrice = 0;
+        }
+      }
+
+      // ❌ No action
+      else {
+        logger.info("Waiting... no valid trade signal");
+      }
+
       logger.trackDecision(decision);
 
     } catch (err) {
-      console.error("[❌ AUTO TRADE ERROR]", err.message);
+      logger.error("AUTO TRADE ERROR", err.message);
     }
 
     await new Promise(res => setTimeout(res, 7000)); // every 7s
@@ -54,4 +84,3 @@ const runAutoTrade = async () => {
 };
 
 runAutoTrade();
-        
