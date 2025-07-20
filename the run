@@ -1,5 +1,0 @@
-# ➤ Build Command (Render):
-yarn install
-
-# ➤ Start Command (Render):
-node index.js
