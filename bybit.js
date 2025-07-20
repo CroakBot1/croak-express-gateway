@@ -51,7 +51,6 @@ function executeTrade(symbol, side, qty) {
   };
 }
 
-// ✅ FIXED: Only one getMemoryState function
 function getMemoryState() {
   console.log(`[🧠 MOCK MEMORY STATE] Returning default memory state`);
   return {
@@ -63,7 +62,7 @@ function getMemoryState() {
   };
 }
 
-// ✅ FIXED: Only ONE module.exports block
+// ✅ Final export
 module.exports = {
   getCandles,
   getLivePrice,
