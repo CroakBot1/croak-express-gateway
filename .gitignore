@@ -44,4 +44,7 @@ git push origin main
 git add .
 git commit -m "Patch: Load .env and inject BYBIT keys securely"
 git push
+git add src/utils/bybit.js
+git commit -m "✅ Fix: Load .env and validate BYBIT keys for safe startup"
+git push origin main
 
