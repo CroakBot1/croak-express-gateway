@@ -1,40 +1,55 @@
 // src/bybit.js
 
-function getLivePrice(symbol = 'ETHUSDT') {
-  console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
-  return Promise.resolve(2950); // mock price
-}
-
-function getCapital() {
-  console.log(`[💰 MOCK CAPITAL] Returning default 1000 USDT`);
-  return Promise.resolve(1000); // mock capital
-}
-
-function getMemoryState() {
-  console.log(`[🧠 MOCK MEMORY] Returning empty memory state`);
-  return Promise.resolve({});
-}
-
-function placeOrder(orderDetails) {
-  console.log(`[🛒 MOCK ORDER] Order Placed:`, orderDetails);
-  return Promise.resolve({ success: true });
-}
-
-function cancelAllOrders() {
-  console.log(`[🧹 MOCK CANCEL] All orders cancelled`);
-  return Promise.resolve({ success: true });
-}
-
-function getPNL(entryPrice, currentPrice, qty, side) {
-  console.log(`[📉 MOCK PNL] Entry: ${entryPrice}, Current: ${currentPrice}, Qty: ${qty}, Side: ${side}`);
-  return Promise.resolve((currentPrice - entryPrice) * qty * (side === 'Buy' ? 1 : -1));
-}
-
 module.exports = {
-  getLivePrice,
-  getCapital,
-  getMemoryState,
-  placeOrder,
-  cancelAllOrders,
-  getPNL
+  // Mock for fetching live price
+  getLivePrice: async (symbol = 'ETHUSDT') => {
+    console.log(`[📈 MOCK LIVE PRICE] Symbol: ${symbol}`);
+    return 2850; // mock price
+  },
+
+  // Mock for fetching candles
+  getCandles: async (symbol = 'ETHUSDT', interval = '1m', limit = 100) => {
+    console.log(`[📊 MOCK CANDLES] Symbol: ${symbol}, Interval: ${interval}, Limit: ${limit}`);
+    return []; // mock candles
+  },
+
+  // Mock for fetching account capital
+  getCapital: async () => {
+    console.log(`[💰 MOCK CAPITAL] Returning default 1000 USDT`);
+    return 1000;
+  },
+
+  // Mock for calculating PNL
+  getPNL: async () => {
+    console.log(`[📉 MOCK PNL] Entry: undefined, Current: undefined, Qty: undefined, Side: undefined`);
+    return {
+      entryPrice: 0,
+      currentPrice: 0,
+      qty: 0,
+      side: 'NONE',
+      pnl: 0,
+    };
+  },
+
+  // Memory State for strategy (mocked)
+  getMemoryState: () => {
+    console.log(`[🧠 MOCK MEMORY] Returning default brain memory state`);
+    return {
+      score: 100,
+      lastAction: 'NONE',
+      history: [],
+    };
+  },
+
+  // Fallback mock for placing order
+  placeOrder: async (side = 'Buy', quantity = 1, symbol = 'ETHUSDT') => {
+    console.log(`[🛒 MOCK ORDER] Placing ${side} order for ${quantity} ${symbol}`);
+    return { success: true, mock: true };
+  },
+
+  // Optional: clear mock memory
+  resetMemoryState: () => {
+    console.log(`[🧹 MOCK RESET] Memory state reset`);
+    return true;
+  },
 };
