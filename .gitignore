@@ -1,16 +1,3 @@
-git add .
-git commit -m "fix: update start script after removing src folder"
-git push
-npm install
-git add package-lock.json
-git commit -m "Add lockfile to force npm usage"
-git push
-git add package.json index.js
-git commit -m "🚀 Fix: Add working package.json and entry index.js"
-git push origin main
-git add .
-git commit -m "Move package.json and index.js to root"
-git push origin main
-git add .
-git commit -m "Move index.js and package.json to root"
+git add render.yaml
+git commit -m "Add render config"
 git push
