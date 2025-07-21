@@ -1,1 +1,18 @@
+{
+  "name": "croak-express-gateway",
+  "version": "1.0.0",
+  "description": "Croak Bot 24/7 Live Trading Execution using Bybit Data for Uniswap Trades",
+  "main": "src/backend-trader/index.js",
+  "scripts": {
+    "start": "node src/backend-trader/index.js"
+  },
+  "keywords": ["croak", "bot", "autotrade", "uniswap", "bybit", "gateway"],
+  "author": "Agawon",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "web3": "^4.0.0"
+  }
+}
 
