@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: croak-express-gateway
+    env: node
+    rootDir: .                 # 👈 Use project root as working directory
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
