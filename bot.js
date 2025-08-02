@@ -1,7 +1,8 @@
 const puppeteer = require('puppeteer');
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
-const TOTAL_VIEWS = 100;
+const TOTAL_VIEWS = 1000;
+const CONCURRENT_SESSIONS = 50;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -15,25 +16,63 @@ const getRandomUserAgent = () => {
   return agents[Math.floor(Math.random() * agents.length)];
 };
 
-(async () => {
-  for (let i = 1; i <= TOTAL_VIEWS; i++) {
-    const port = 10001 + Math.floor(Math.random() * 100); // Random port from 10001–10100
-    const proxy = `http://spw95jq2io:~jVy74ixsez5tWW6Cr@gate.decodo.com:${port}`;
+// Generate Decodo proxy ports (10001–10100)
+const ports = Array.from({ length: 100 }, (_, i) => 10001 + i);
 
-    console.log(`\n🎯 View #${i} using proxy ${proxy}`);
+const viewOnce = async (i) => {
+  const port = ports[Math.floor(Math.random() * ports.length)];
+  const proxy = `http://spw95jq2io:~jVy74ixsez5tWW6Cr@gate.decodo.com:${port}`;
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [`--proxy-server=gate.decodo.com:${port}`],
+  console.log(`🔁 View #${i} via ${proxy}`);
+
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: [`--proxy-server=gate.decodo.com:${port}`],
+  });
+
+  const page = await browser.newPage();
+
+  try {
+    await page.authenticate({
+      username: 'spw95jq2io',
+      password: '~jVy74ixsez5tWW6Cr',
     });
 
-    const page = await browser.newPage();
+    await page.setUserAgent(getRandomUserAgent());
 
-    try {
-      await page.authenticate({
-        username: 'spw95jq2io',
-        password: '~jVy74ixsez5tWW6Cr'
-      });
+    // Step 1: Detect actual IP used
+    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
+    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
+    console.log(`🕵️ View #${i} Real IP: ${ip}`);
+
+    // Step 2: Simulate YouTube view
+    await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+    console.log(`📺 Watching YouTube on IP ${ip}...`);
+    await delay(60000); // Watch time
+  } catch (err) {
+    console.error(`❌ View #${i} failed: ${err.message}`);
+  }
+
+  await browser.close();
+};
+
+(async () => {
+  for (let batch = 0; batch < TOTAL_VIEWS / CONCURRENT_SESSIONS; batch++) {
+    console.log(`🚀 Starting batch ${batch + 1} (${CONCURRENT_SESSIONS} views)`);
+
+    const batchViews = [];
+    for (let i = 1; i <= CONCURRENT_SESSIONS; i++) {
+      const viewNum = batch * CONCURRENT_SESSIONS + i;
+      batchViews.push(viewOnce(viewNum));
+    }
+
+    await Promise.all(batchViews); // Wait for all concurrent views
+    console.log(`✅ Batch ${batch + 1} complete.`);
+    await delay(5000); // Short cooldown before next batch
+  }
+
+  console.log('🎉 All 1,000 views completed!');
+})();
 
       await page.setUserAgent(getRandomUserAgent());
 
