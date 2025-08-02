@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
-const TOTAL_VIEWS = 10;
+const TOTAL_VIEWS = 100;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -21,7 +21,7 @@ const getRandomUserAgent = () => {
     const port = ports[Math.floor(Math.random() * ports.length)];
     const proxy = `http://spw95jq2io:~jVy74ixsez5tWW6Cr@gate.decodo.com:${port}`;
 
-    console.log(`\\n🎯 View #${i} via ${proxy}`);
+    console.log(`\n🎯 View #${i} via ${proxy}`);
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -34,6 +34,22 @@ const getRandomUserAgent = () => {
       password: '~jVy74ixsez5tWW6Cr'
     });
     await page.setUserAgent(getRandomUserAgent());
+
+    try {
+      await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+      console.log(`✅ Watching for 60 seconds...`);
+      await delay(60000);
+    } catch (err) {
+      console.error(`❌ View #${i} failed: ${err.message}`);
+    }
+
+    await browser.close();
+    console.log(`✅ View #${i} complete.`);
+    await delay(3000 + Math.floor(Math.random() * 5000)); // Add 3–8s pause
+  }
+
+  console.log('\n🎉 100 views completed. Will auto-run again next hour on Render.');
+})();
 
     try {
       await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
