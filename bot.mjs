@@ -1,11 +1,15 @@
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
+// === CONFIGURATION ===
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
 const TOTAL_VIEWS = 1000;
-const CONCURRENT_SESSIONS = 5; // safe for 512Mi RAM
+const CONCURRENT_SESSIONS = 3; // safe for Render 512Mi
 const MAX_RETRIES = 2;
+const FAST_MODE = false; // set to true for 30s watch time
+const WATCH_TIME = FAST_MODE ? 30000 : 60000;
 
+// === UTILITY FUNCTIONS ===
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const getRandomUserAgent = () => {
@@ -22,6 +26,7 @@ const ports = Array.from({ length: 100 }, (_, i) => 10001 + i);
 let successfulViews = 0;
 let viewCounter = 0;
 
+// === VIEW FUNCTION ===
 const viewOnce = async (i, attempt = 0) => {
   const port = ports[Math.floor(Math.random() * ports.length)];
   const proxy = `http://gate.decodo.com:${port}`;
@@ -53,11 +58,11 @@ const viewOnce = async (i, attempt = 0) => {
 
     const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(60000); // watch for 1 minute
+    await delay(WATCH_TIME); // watch time (default: 60s, fast: 30s)
 
     await browser.close();
     successfulViews++;
-    console.log(`✅ View #${i} complete. (Success #${successfulViews})`);
+    console.log(`✅ View #${i} complete. (Total Success: ${successfulViews})`);
     await delay(3000 + Math.floor(Math.random() * 3000));
     return true;
 
@@ -76,6 +81,7 @@ const viewOnce = async (i, attempt = 0) => {
   }
 };
 
+// === MAIN EXECUTION ===
 (async () => {
   while (successfulViews < TOTAL_VIEWS) {
     console.log(`🚀 New batch: ${successfulViews}/${TOTAL_VIEWS} successful`);
@@ -93,5 +99,5 @@ const viewOnce = async (i, attempt = 0) => {
     await delay(3000);
   }
 
-  console.log(`🎉 Finished: ${TOTAL_VIEWS} successful views`);
+  console.log(`🎉 Done: ${TOTAL_VIEWS} successful views`);
 })();
