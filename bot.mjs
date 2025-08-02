@@ -3,7 +3,7 @@ import chromium from '@sparticuz/chromium';
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
 const TOTAL_VIEWS = 1000;
-const CONCURRENT_SESSIONS = 10; // Safe for 512MB RAM
+const CONCURRENT_SESSIONS = 5; // safe for 512Mi RAM
 const MAX_RETRIES = 2;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -53,12 +53,12 @@ const viewOnce = async (i, attempt = 0) => {
 
     const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(60000); // 1 minute watch time
+    await delay(60000); // watch for 1 minute
 
     await browser.close();
     successfulViews++;
     console.log(`✅ View #${i} complete. (Success #${successfulViews})`);
-    await delay(3000 + Math.floor(Math.random() * 5000));
+    await delay(3000 + Math.floor(Math.random() * 3000));
     return true;
 
   } catch (err) {
@@ -90,7 +90,7 @@ const viewOnce = async (i, attempt = 0) => {
     }
 
     await Promise.all(batchViews);
-    await delay(5000);
+    await delay(3000);
   }
 
   console.log(`🎉 Finished: ${TOTAL_VIEWS} successful views`);
