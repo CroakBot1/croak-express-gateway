@@ -50,6 +50,50 @@ const viewOnce = async (i) => {
 
     const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
+    await delay(60000); // Simulate watch time (60s)
+
+  } catch (err) {
+    console.error(`❌ View #${i} failed: ${err.message}`);
+  }
+
+  if (browser) await browser.close();
+  console.log(`✅ View #${i} complete.`);
+  await delay(3000 + Math.floor(Math.random() * 5000));
+};
+
+(async () => {
+  for (let batch = 0; batch < TOTAL_VIEWS / CONCURRENT_SESSIONS; batch++) {
+    console.log(`🚀 Starting batch ${batch + 1}`);
+
+    const batchViews = [];
+    for (let i = 1; i <= CONCURRENT_SESSIONS; i++) {
+      const viewNum = batch * CONCURRENT_SESSIONS + i;
+      batchViews.push(viewOnce(viewNum));
+    }
+
+    await Promise.all(batchViews);
+    console.log(`✅ Batch ${batch + 1} complete.`);
+    await delay(5000);
+  }
+
+  console.log('\n🎉 All 1,000 views completed!');
+})();
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        ...chromium.args
+      ]
+    });
+
+    const page = await browser.newPage();
+    await page.authenticate({ username, password });
+    await page.setUserAgent(getRandomUserAgent());
+
+    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
+    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
+    console.log(`🕵️ Real IP: ${ip}`);
+
+    const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+    console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
     await delay(60000); // Simulate watch time
 
   } catch (err) {
