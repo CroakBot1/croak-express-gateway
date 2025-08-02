@@ -3,7 +3,7 @@ import chromium from '@sparticuz/chromium';
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
 const TOTAL_VIEWS = 1000;
-const CONCURRENT_SESSIONS = 50;
+const CONCURRENT_SESSIONS = 10; // Safe for 512MB RAM
 const MAX_RETRIES = 2;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -53,7 +53,7 @@ const viewOnce = async (i, attempt = 0) => {
 
     const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(60000); // Watch time
+    await delay(60000); // 1 minute watch time
 
     await browser.close();
     successfulViews++;
