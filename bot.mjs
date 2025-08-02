@@ -19,7 +19,6 @@ const getRandomUserAgent = () => {
 };
 
 const ports = Array.from({ length: 100 }, (_, i) => 10001 + i);
-
 let successfulViews = 0;
 let viewCounter = 0;
 
@@ -30,10 +29,10 @@ const viewOnce = async (i, attempt = 0) => {
   const password = '~jVy74ixsez5tWW6Cr';
 
   console.log(`🔁 View #${i} (Attempt ${attempt + 1}) via ${proxy}`);
-
   let browser;
+
   try {
-    const launchOptions = {
+    browser = await puppeteer.launch({
       headless: chromium.headless,
       executablePath: await chromium.executablePath(),
       args: [
@@ -42,9 +41,7 @@ const viewOnce = async (i, attempt = 0) => {
         '--disable-setuid-sandbox',
         ...chromium.args
       ]
-    };
-
-    browser = await puppeteer.launch(launchOptions);
+    });
 
     const page = await browser.newPage();
     await page.authenticate({ username, password });
@@ -56,24 +53,24 @@ const viewOnce = async (i, attempt = 0) => {
 
     const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(60000); // 1 minute watch time
+    await delay(60000); // Watch time
 
-    if (browser) await browser.close();
+    await browser.close();
     successfulViews++;
     console.log(`✅ View #${i} complete. (Success #${successfulViews})`);
     await delay(3000 + Math.floor(Math.random() * 5000));
     return true;
 
   } catch (err) {
-    console.error(`❌ View #${i} failed: ${err.message}`);
     if (browser) await browser.close();
+    console.error(`❌ View #${i} failed: ${err.message}`);
 
     if (attempt < MAX_RETRIES) {
       console.log(`🔁 Retrying View #${i} (Retry ${attempt + 2}/${MAX_RETRIES + 1})...`);
       await delay(2000);
       return viewOnce(i, attempt + 1);
     } else {
-      console.log(`❌ View #${i} permanently failed after ${MAX_RETRIES + 1} attempts.`);
+      console.log(`⛔ View #${i} permanently failed after ${MAX_RETRIES + 1} attempts.`);
       return false;
     }
   }
@@ -81,7 +78,7 @@ const viewOnce = async (i, attempt = 0) => {
 
 (async () => {
   while (successfulViews < TOTAL_VIEWS) {
-    console.log(`🚀 Starting new batch — Success so far: ${successfulViews}/${TOTAL_VIEWS}`);
+    console.log(`🚀 New batch: ${successfulViews}/${TOTAL_VIEWS} successful`);
 
     const remaining = TOTAL_VIEWS - successfulViews;
     const batchSize = Math.min(CONCURRENT_SESSIONS, remaining);
@@ -96,5 +93,5 @@ const viewOnce = async (i, attempt = 0) => {
     await delay(5000);
   }
 
-  console.log(`\n🎉 All ${TOTAL_VIEWS} successful views completed!`);
+  console.log(`🎉 Finished: ${TOTAL_VIEWS} successful views`);
 })();
