@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "YouLikeHits Auto Login + YouTube View Bot with Puppeteer and .env config",
   "main": "ylh-bot.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node ylh-bot.js"
   },
