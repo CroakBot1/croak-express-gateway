@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import http from 'http';
 
 chromium.setHeadlessMode = true;
 chromium.setGraphicsMode = false;
@@ -42,7 +43,7 @@ const viewOnce = async (i) => {
   let browser;
 
   try {
-    await delay(300); // prevent ETXTBSY by spacing launches
+    await delay(300);
 
     browser = await puppeteer.launch({
       headless: true,
@@ -64,7 +65,7 @@ const viewOnce = async (i) => {
 
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
-    await delay(60000); // 60 sec watch
+    await delay(60000);
 
   } catch (err) {
     console.error(`❌ View #${i} failed: ${err.message}`);
@@ -84,3 +85,8 @@ const start = async () => {
 };
 
 start();
+
+// ✅ Dummy HTTP server to satisfy Render Web Service scan
+http.createServer((req, res) => {
+  res.end('📺 YouTube view bot is running...');
+}).listen(process.env.PORT || 3000);
