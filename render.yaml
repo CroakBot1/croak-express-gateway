@@ -1,7 +1,7 @@
 services:
-  - type: worker
-    name: youtube-viewer
+  - type: cron
+    name: yt-viewer-hourly
     env: node
-    plan: free
+    schedule: "0 * * * *"
     buildCommand: npm install
     startCommand: node bot.js
