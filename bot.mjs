@@ -8,7 +8,6 @@ const CONCURRENT_SESSIONS = 5;
 const username = 'spw95jq2io';
 const password = '~jVy74ixsez5tWW6Cr';
 
-// Generate 100,000 Decodo ports: 10001–110000
 const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
 let usedPorts = new Set();
 
@@ -43,7 +42,7 @@ const viewOnce = async (i) => {
   try {
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: chromium.executablePath,
+      executablePath: await chromium.executablePath(),
       args: [
         `--proxy-server=${proxy}`,
         '--no-sandbox',
@@ -55,12 +54,10 @@ const viewOnce = async (i) => {
     await page.authenticate({ username, password });
     await page.setUserAgent(getRandomUserAgent());
 
-    // Get current IP for verification
     await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
     console.log(`🕵️ Real IP: ${ip}`);
 
-    // Visit video
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
     await delay(60000); // 60s watch time
@@ -71,7 +68,7 @@ const viewOnce = async (i) => {
 
   if (browser) await browser.close();
   console.log(`✅ View #${i} complete.`);
-  await delay(3000 + Math.floor(Math.random() * 3000)); // small cooldown
+  await delay(3000 + Math.floor(Math.random() * 3000));
 };
 
 const start = async () => {
@@ -85,7 +82,7 @@ const start = async () => {
     }
 
     await Promise.all(tasks);
-    await delay(5000); // short delay between batches
+    await delay(5000);
   }
 
   console.log('\n🎉 All views completed!');
