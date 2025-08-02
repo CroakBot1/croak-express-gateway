@@ -1,11 +1,12 @@
 const puppeteer = require('puppeteer');
-
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
+
 const TOTAL_VIEWS = 1000;
 const CONCURRENT_SESSIONS = 50;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Random User-Agents
 const getRandomUserAgent = () => {
   const agents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114',
@@ -16,7 +17,7 @@ const getRandomUserAgent = () => {
   return agents[Math.floor(Math.random() * agents.length)];
 };
 
-// Generate Decodo proxy ports (10001–10100)
+// Generate 100 Decodo ports (10001–10100)
 const ports = Array.from({ length: 100 }, (_, i) => 10001 + i);
 
 const viewOnce = async (i) => {
@@ -25,15 +26,58 @@ const viewOnce = async (i) => {
 
   console.log(`🔁 View #${i} via ${proxy}`);
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [`--proxy-server=gate.decodo.com:${port}`],
-  });
-
-  const page = await browser.newPage();
-
+  let browser;
   try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [`--proxy-server=gate.decodo.com:${port}`, '--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    const page = await browser.newPage();
+
     await page.authenticate({
+      username: 'spw95jq2io',
+      password: '~jVy74ixsez5tWW6Cr',
+    });
+
+    await page.setUserAgent(getRandomUserAgent());
+
+    // Detect real IP
+    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
+    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
+    console.log(`🕵️ View #${i} Real IP: ${ip}`);
+
+    // Watch YouTube video
+    await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+    console.log(`📺 Watching YouTube on IP ${ip}...`);
+    await delay(60000); // 60s watch time
+
+  } catch (err) {
+    console.error(`❌ View #${i} failed: ${err.message}`);
+  }
+
+  if (browser) await browser.close();
+  console.log(`✅ View #${i} complete.`);
+  await delay(3000 + Math.floor(Math.random() * 5000)); // Cooldown 3–8s
+};
+
+(async () => {
+  for (let batch = 0; batch < TOTAL_VIEWS / CONCURRENT_SESSIONS; batch++) {
+    console.log(`🚀 Starting batch ${batch + 1} (${CONCURRENT_SESSIONS} views)`);
+
+    const batchViews = [];
+    for (let i = 1; i <= CONCURRENT_SESSIONS; i++) {
+      const viewNum = batch * CONCURRENT_SESSIONS + i;
+      batchViews.push(viewOnce(viewNum));
+    }
+
+    await Promise.all(batchViews);
+    console.log(`✅ Batch ${batch + 1} complete.`);
+    await delay(5000); // Short break before next batch
+  }
+
+  console.log('\n🎉 All 1,000 views completed!');
+})();
       username: 'spw95jq2io',
       password: '~jVy74ixsez5tWW6Cr',
     });
