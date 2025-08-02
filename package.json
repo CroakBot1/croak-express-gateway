@@ -4,7 +4,8 @@
   "description": "Automated YouTube viewer using Puppeteer + Decodo proxy",
   "type": "module",
   "scripts": {
-    "start": "node bot.mjs"
+    "start": "node bot.mjs",
+    "server": "node server.js"
   },
   "dependencies": {
     "puppeteer-core": "^21.3.8",
