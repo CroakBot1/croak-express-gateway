@@ -6,8 +6,7 @@ chromium.setGraphicsMode = false;
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
 const TOTAL_VIEWS = 1000;
-const CONCURRENT_SESSIONS = 5;
-
+const VIEW_DELAY_MS = 1000;
 const username = 'spw95jq2io';
 const password = '~jVy74ixsez5tWW6Cr';
 
@@ -43,7 +42,7 @@ const viewOnce = async (i) => {
   let browser;
 
   try {
-    await delay(200); // Small spawn delay to avoid ETXTBSY
+    await delay(300); // prevent ETXTBSY by spacing launches
 
     browser = await puppeteer.launch({
       headless: true,
@@ -65,7 +64,7 @@ const viewOnce = async (i) => {
 
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
-    await delay(60000); // 60 seconds view
+    await delay(60000); // 60 sec watch
 
   } catch (err) {
     console.error(`❌ View #${i} failed: ${err.message}`);
@@ -73,24 +72,15 @@ const viewOnce = async (i) => {
 
   if (browser) await browser.close();
   console.log(`✅ View #${i} complete.`);
-  await delay(3000 + Math.floor(Math.random() * 3000));
+  await delay(VIEW_DELAY_MS);
 };
 
 const start = async () => {
-  for (let batch = 0; batch < TOTAL_VIEWS / CONCURRENT_SESSIONS; batch++) {
-    console.log(`🚀 Batch ${batch + 1}`);
-    const tasks = [];
-
-    for (let i = 1; i <= CONCURRENT_SESSIONS; i++) {
-      const viewNum = batch * CONCURRENT_SESSIONS + i;
-      tasks.push(viewOnce(viewNum));
-    }
-
-    await Promise.all(tasks);
-    await delay(5000);
+  console.log(`🚀 Starting 1-by-1 mode for ${TOTAL_VIEWS} views...`);
+  for (let i = 1; i <= TOTAL_VIEWS; i++) {
+    await viewOnce(i);
   }
-
-  console.log('\n🎉 All views completed!');
+  console.log(`🎉 All ${TOTAL_VIEWS} views done!`);
 };
 
 start();
