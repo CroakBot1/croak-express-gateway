@@ -1,7 +1,7 @@
 {
   "name": "croak-express-gateway",
   "version": "1.0.0",
-  "description": "Express backend for Croak Bot Gateway - Render deployable",
+  "description": "Express backend for CroakBot gateway. Ready for Render deployment.",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
@@ -10,7 +10,7 @@
   "keywords": [
     "express",
     "render",
-    "croak",
+    "croakbot",
     "backend",
     "gateway"
   ],
