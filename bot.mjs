@@ -1,6 +1,9 @@
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
+chromium.setHeadlessMode = true;
+chromium.setGraphicsMode = false;
+
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
 const TOTAL_VIEWS = 1000;
 const CONCURRENT_SESSIONS = 5;
@@ -11,7 +14,7 @@ const password = '~jVy74ixsez5tWW6Cr';
 const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
 let usedPorts = new Set();
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 const getRandomUserAgent = () => {
   const agents = [
@@ -40,6 +43,8 @@ const viewOnce = async (i) => {
   let browser;
 
   try {
+    await delay(200); // Small spawn delay to avoid ETXTBSY
+
     browser = await puppeteer.launch({
       headless: true,
       executablePath: await chromium.executablePath(),
@@ -60,7 +65,7 @@ const viewOnce = async (i) => {
 
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
-    await delay(60000); // 60s watch time
+    await delay(60000); // 60 seconds view
 
   } catch (err) {
     console.error(`❌ View #${i} failed: ${err.message}`);
