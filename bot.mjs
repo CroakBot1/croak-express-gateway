@@ -33,15 +33,18 @@ const viewOnce = async (i, attempt = 0) => {
 
   let browser;
   try {
-    browser = await puppeteer.launch({
+    const launchOptions = {
       headless: chromium.headless,
       executablePath: await chromium.executablePath(),
       args: [
         `--proxy-server=${proxy}`,
         '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ].concat(chromium.args)
-    });
+        '--disable-setuid-sandbox',
+        ...chromium.args
+      ]
+    };
+
+    browser = await puppeteer.launch(launchOptions);
 
     const page = await browser.newPage();
     await page.authenticate({ username, password });
@@ -76,7 +79,6 @@ const viewOnce = async (i, attempt = 0) => {
   }
 };
 
-// ✅ Main logic wrapped in async function
 (async () => {
   while (successfulViews < TOTAL_VIEWS) {
     console.log(`🚀 Starting new batch — Success so far: ${successfulViews}/${TOTAL_VIEWS}`);
@@ -96,124 +98,3 @@ const viewOnce = async (i, attempt = 0) => {
 
   console.log(`\n🎉 All ${TOTAL_VIEWS} successful views completed!`);
 })();
-      executablePath: await chromium.executablePath(),
-      args: [
-        `--proxy-server=${proxy}`,
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ].concat(chromium.args)
-    });
-
-    const page = await browser.newPage();
-    await page.authenticate({ username, password });
-    await page.setUserAgent(getRandomUserAgent());
-
-    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
-    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
-    console.log(`🕵️ Real IP: ${ip}`);
-
-    const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
-    console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(60000); // 1 minute watch time
-
-    if (browser) await browser.close();
-    successfulViews++;
-    console.log(`✅ View #${i} complete. (Success #${successfulViews})`);
-    await delay(3000 + Math.floor(Math.random() * 5000));
-    return true;
-
-  } catch (err) {
-    console.error(`❌ View #${i} failed: ${err.message}`);
-    if (browser) await browser.close();
-
-    if (attempt < MAX_RETRIES) {
-      console.log(`🔁 Retrying View #${i} (Retry ${attempt + 2}/${MAX_RETRIES + 1})...`);
-      await delay(2000);
-      return viewOnce(i, attempt + 1);
-    } else {
-      console.log(`❌ View #${i} permanently failed after ${MAX_RETRIES + 1} attempts.`);
-      return false;
-    }
-  }
-};
-
-while (successfulViews < TOTAL_VIEWS) {
-  console.log(`🚀 Starting new batch — Success so far: ${successfulViews}/${TOTAL_VIEWS}`);
-
-  const remaining = TOTAL_VIEWS - successfulViews;
-  const batchSize = Math.min(CONCURRENT_SESSIONS, remaining);
-  const batchViews = [];
-
-  for (let i = 0; i < batchSize; i++) {
-    viewCounter++;
-    batchViews.push(viewOnce(viewCounter));
-  }
-
-  await Promise.all(batchViews);
-  await delay(5000);
-}
-
-console.log(`\n🎉 All ${TOTAL_VIEWS} successful views completed!`);
-      return false;
-    }
-  }
-};
-
-while (successfulViews < TOTAL_VIEWS) {
-  console.log(`🚀 Starting new batch — Success so far: ${successfulViews}/${TOTAL_VIEWS}`);
-
-  const remaining = TOTAL_VIEWS - successfulViews;
-  const batchSize = Math.min(CONCURRENT_SESSIONS, remaining);
-  const batchViews = [];
-
-  for (let i = 0; i < batchSize; i++) {
-    viewCounter++;
-    batchViews.push(viewOnce(viewCounter));
-  }
-
-  await Promise.all(batchViews);
-  await delay(5000);
-}
-
-console.log(`\n🎉 All ${TOTAL_VIEWS} successful views completed!`);
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ].concat(chromium.args) // ✅ Spread replaced with concat
-    });
-
-    const page = await browser.newPage();
-    await page.authenticate({ username, password });
-    await page.setUserAgent(getRandomUserAgent());
-
-    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
-    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
-    console.log(`🕵️ Real IP: ${ip}`);
-
-    const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
-    console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(60000); // 1 minute watch time
-
-  } catch (err) {
-    console.error(`❌ View #${i} failed: ${err.message}`);
-  }
-
-  if (browser) await browser.close();
-  console.log(`✅ View #${i} complete.`);
-  await delay(3000 + Math.floor(Math.random() * 5000)); // cool-down
-};
-
-for (let batch = 0; batch < TOTAL_VIEWS / CONCURRENT_SESSIONS; batch++) {
-  console.log(`🚀 Starting batch ${batch + 1}`);
-
-  const batchViews = [];
-  for (let i = 1; i <= CONCURRENT_SESSIONS; i++) {
-    const viewNum = batch * CONCURRENT_SESSIONS + i;
-    batchViews.push(viewOnce(viewNum));
-  }
-
-  await Promise.all(batchViews);
-  console.log(`✅ Batch ${batch + 1} complete.`);
-  await delay(5000);
-}
-
-console.log('\n🎉 All 1,000 views completed!');
