@@ -1,3 +1,4 @@
+
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import http from 'http';
@@ -6,12 +7,13 @@ chromium.setHeadlessMode = true;
 chromium.setGraphicsMode = false;
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
-const TOTAL_VIEWS_PER_CYCLE = 1000;
+const TOTAL_VIEWS = 1000;
 const VIEW_DELAY_MS = 1000;
 const username = 'spw95jq2io';
 const password = '~jVy74ixsez5tWW6Cr';
 
 const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
+let usedPorts = new Set();
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -25,9 +27,7 @@ const getRandomUserAgent = () => {
   return agents[Math.floor(Math.random() * agents.length)];
 };
 
-let usedPorts = new Set();
 const getUniquePort = () => {
-  if (usedPorts.size >= ports.length) usedPorts.clear(); // Reset if exhausted
   let port;
   do {
     port = ports[Math.floor(Math.random() * ports.length)];
@@ -77,22 +77,17 @@ const viewOnce = async (i) => {
   await delay(VIEW_DELAY_MS);
 };
 
-const loopForever = async () => {
-  let cycle = 1;
-  while (true) {
-    console.log(`\n🔁 Cycle #${cycle} - Starting ${TOTAL_VIEWS_PER_CYCLE} views...`);
-    for (let i = 1; i <= TOTAL_VIEWS_PER_CYCLE; i++) {
-      await viewOnce(i);
-    }
-    console.log(`🎉 Cycle #${cycle} complete! Starting next cycle...`);
-    usedPorts.clear(); // Clear used ports for fresh reuse
-    cycle++;
+const start = async () => {
+  console.log(`🚀 Starting 1-by-1 mode for ${TOTAL_VIEWS} views...`);
+  for (let i = 1; i <= TOTAL_VIEWS; i++) {
+    await viewOnce(i);
   }
+  console.log(`🎉 All ${TOTAL_VIEWS} views done!`);
 };
 
-loopForever();
+start();
 
-// ✅ Dummy HTTP server for Render uptime
+// ✅ Dummy HTTP server to satisfy Render Web Service scan
 http.createServer((req, res) => {
-  res.end('📺 YouTube view bot is running 24/7...');
+  res.end('📺 YouTube view bot is running...');
 }).listen(process.env.PORT || 3000);
