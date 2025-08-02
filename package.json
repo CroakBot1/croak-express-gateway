@@ -1,0 +1,23 @@
+{
+  "name": "ylh-bot",
+  "version": "1.0.0",
+  "description": "YouLikeHits Auto Login + YouTube View Bot with Puppeteer and .env config",
+  "main": "ylh-bot.js",
+  "scripts": {
+    "start": "node ylh-bot.js"
+  },
+  "keywords": [
+    "youlikehits",
+    "puppeteer",
+    "automation",
+    "bot",
+    "youtube",
+    "auto-view"
+  ],
+  "author": "YourNameHere",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "puppeteer": "^22.7.0"
+  }
+}
