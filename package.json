@@ -1,14 +1,12 @@
 {
   "name": "youtube-view-bot",
   "version": "1.0.0",
-  "description": "Automated YouTube view bot using Puppeteer Core and rotating proxies",
-  "main": "bot.mjs",
   "type": "module",
   "scripts": {
     "start": "node bot.mjs"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^110.0.0",
-    "puppeteer-core": "^21.3.8"
+    "puppeteer-core": "^21.3.8",
+    "@sparticuz/chromium": "^110.0.0"
   }
 }
