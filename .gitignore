@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+
+# Environment secrets
+.env
+
+# Puppeteer Chromium cache & browser data
+.cache/
+.chromium/
+puppeteer-debug.log
+
+# VSCode & system files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific
+.idea/
+*.swp
