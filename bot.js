@@ -29,11 +29,31 @@ const getRandomUserAgent = () => {
     });
 
     const page = await browser.newPage();
-    await page.authenticate({
-      username: 'spw95jq2io',
-      password: '~jVy74ixsez5tWW6Cr'
-    });
-    await page.setUserAgent(getRandomUserAgent());
+
+    try {
+      await page.authenticate({
+        username: 'spw95jq2io',
+        password: '~jVy74ixsez5tWW6Cr'
+      });
+
+      await page.setUserAgent(getRandomUserAgent());
+
+      await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+      console.log(`✅ Watching for 60 seconds...`);
+
+      await delay(60000); // Simulate watch
+    } catch (err) {
+      console.error(`❌ View #${i} failed: ${err.message}`);
+    }
+
+    await browser.close();
+    console.log(`✅ View #${i} complete.`);
+
+    await delay(3000 + Math.floor(Math.random() * 5000)); // 3–8 seconds pause
+  }
+
+  console.log('\n🎉 100 views completed. Ready for next hour!');
+})();
 
     try {
       await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
