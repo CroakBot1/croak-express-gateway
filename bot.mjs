@@ -1,15 +1,17 @@
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
-// === CONFIGURATION ===
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
 const TOTAL_VIEWS = 1000;
-const CONCURRENT_SESSIONS = 3; // safe for Render 512Mi
-const MAX_RETRIES = 2;
-const FAST_MODE = false; // set to true for 30s watch time
-const WATCH_TIME = FAST_MODE ? 30000 : 60000;
+const CONCURRENT_SESSIONS = 5;
 
-// === UTILITY FUNCTIONS ===
+const username = 'spw95jq2io';
+const password = '~jVy74ixsez5tWW6Cr';
+
+// Generate 100,000 Decodo ports: 10001–110000
+const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
+let usedPorts = new Set();
+
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const getRandomUserAgent = () => {
@@ -22,82 +24,71 @@ const getRandomUserAgent = () => {
   return agents[Math.floor(Math.random() * agents.length)];
 };
 
-const ports = Array.from({ length: 100 }, (_, i) => 10001 + i);
-let successfulViews = 0;
-let viewCounter = 0;
+const getUniquePort = () => {
+  let port;
+  do {
+    port = ports[Math.floor(Math.random() * ports.length)];
+  } while (usedPorts.has(port));
+  usedPorts.add(port);
+  return port;
+};
 
-// === VIEW FUNCTION ===
-const viewOnce = async (i, attempt = 0) => {
-  const port = ports[Math.floor(Math.random() * ports.length)];
+const viewOnce = async (i) => {
+  const port = getUniquePort();
   const proxy = `http://gate.decodo.com:${port}`;
-  const username = 'spw95jq2io';
-  const password = '~jVy74ixsez5tWW6Cr';
 
-  console.log(`🔁 View #${i} (Attempt ${attempt + 1}) via ${proxy}`);
+  console.log(`🔁 View #${i} via ${proxy}`);
   let browser;
 
   try {
     browser = await puppeteer.launch({
-      headless: chromium.headless,
-      executablePath: await chromium.executablePath(),
+      headless: true,
+      executablePath: chromium.executablePath,
       args: [
         `--proxy-server=${proxy}`,
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        ...chromium.args
-      ]
+      ],
     });
 
     const page = await browser.newPage();
     await page.authenticate({ username, password });
     await page.setUserAgent(getRandomUserAgent());
 
+    // Get current IP for verification
     await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
     console.log(`🕵️ Real IP: ${ip}`);
 
-    const response = await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
-    console.log(`📺 Status: ${response.status()} | Watching on IP ${ip}...`);
-    await delay(WATCH_TIME); // watch time (default: 60s, fast: 30s)
-
-    await browser.close();
-    successfulViews++;
-    console.log(`✅ View #${i} complete. (Total Success: ${successfulViews})`);
-    await delay(3000 + Math.floor(Math.random() * 3000));
-    return true;
+    // Visit video
+    await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
+    console.log(`📺 Watching video on ${ip}...`);
+    await delay(60000); // 60s watch time
 
   } catch (err) {
-    if (browser) await browser.close();
     console.error(`❌ View #${i} failed: ${err.message}`);
-
-    if (attempt < MAX_RETRIES) {
-      console.log(`🔁 Retrying View #${i} (Retry ${attempt + 2}/${MAX_RETRIES + 1})...`);
-      await delay(2000);
-      return viewOnce(i, attempt + 1);
-    } else {
-      console.log(`⛔ View #${i} permanently failed after ${MAX_RETRIES + 1} attempts.`);
-      return false;
-    }
   }
+
+  if (browser) await browser.close();
+  console.log(`✅ View #${i} complete.`);
+  await delay(3000 + Math.floor(Math.random() * 3000)); // small cooldown
 };
 
-// === MAIN EXECUTION ===
-(async () => {
-  while (successfulViews < TOTAL_VIEWS) {
-    console.log(`🚀 New batch: ${successfulViews}/${TOTAL_VIEWS} successful`);
+const start = async () => {
+  for (let batch = 0; batch < TOTAL_VIEWS / CONCURRENT_SESSIONS; batch++) {
+    console.log(`🚀 Batch ${batch + 1}`);
+    const tasks = [];
 
-    const remaining = TOTAL_VIEWS - successfulViews;
-    const batchSize = Math.min(CONCURRENT_SESSIONS, remaining);
-    const batchViews = [];
-
-    for (let i = 0; i < batchSize; i++) {
-      viewCounter++;
-      batchViews.push(viewOnce(viewCounter));
+    for (let i = 1; i <= CONCURRENT_SESSIONS; i++) {
+      const viewNum = batch * CONCURRENT_SESSIONS + i;
+      tasks.push(viewOnce(viewNum));
     }
 
-    await Promise.all(batchViews);
-    await delay(3000);
+    await Promise.all(tasks);
+    await delay(5000); // short delay between batches
   }
 
-  console.log(`🎉 Done: ${TOTAL_VIEWS} successful views`);
-})();
+  console.log('\n🎉 All views completed!');
+};
+
+start();
