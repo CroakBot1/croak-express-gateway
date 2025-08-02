@@ -17,11 +17,10 @@ const getRandomUserAgent = () => {
 
 (async () => {
   for (let i = 1; i <= TOTAL_VIEWS; i++) {
-    const ports = [10001,10002,10003,10004,10005,10006,10007,10008,10009,10010];
-    const port = ports[Math.floor(Math.random() * ports.length)];
+    const port = 10001 + Math.floor(Math.random() * 100); // Random port from 10001–10100
     const proxy = `http://spw95jq2io:~jVy74ixsez5tWW6Cr@gate.decodo.com:${port}`;
 
-    console.log(`\n🎯 View #${i} via ${proxy}`);
+    console.log(`\n🎯 View #${i} using proxy ${proxy}`);
 
     const browser = await puppeteer.launch({
       headless: true,
@@ -34,6 +33,30 @@ const getRandomUserAgent = () => {
       await page.authenticate({
         username: 'spw95jq2io',
         password: '~jVy74ixsez5tWW6Cr'
+      });
+
+      await page.setUserAgent(getRandomUserAgent());
+
+      await page.goto(VIDEO_URL, {
+        waitUntil: 'networkidle2',
+        timeout: 60000
+      });
+
+      console.log(`✅ Watching for 60 seconds...`);
+      await delay(60000); // Simulate full watch time
+
+    } catch (err) {
+      console.error(`❌ View #${i} failed: ${err.message}`);
+    }
+
+    await browser.close();
+    console.log(`✅ View #${i} complete.`);
+
+    await delay(3000 + Math.floor(Math.random() * 5000)); // 3–8s cooldown before next
+  }
+
+  console.log('\n🎉 All 100 views completed!');
+})();
       });
 
       await page.setUserAgent(getRandomUserAgent());
