@@ -1,14 +1,15 @@
+require("dotenv").config();
 const puppeteer = require("puppeteer");
 
-const USERNAME = "app1";
-const PASSWORD = "Freedom98";
+const USERNAME = process.env.YLH_USERNAME;
+const PASSWORD = process.env.YLH_PASSWORD;
+const VIEW_WAIT = parseInt(process.env.YLH_VIEW_WAIT || "35000", 10);
 const LOGIN_URL = "https://www.youlikehits.com/login.php";
 const YT_VIEW_URL = "https://www.youlikehits.com/youtubeviews.php";
-const VIEW_WAIT = 35000;
 
 (async () => {
     const browser = await puppeteer.launch({
-        headless: false, // Set to true if you want to hide browser
+        headless: false,
         defaultViewport: null,
         args: ["--start-maximized"]
     });
@@ -54,5 +55,5 @@ const VIEW_WAIT = 35000;
         }
     }
 
-    // await browser.close(); // This never gets called unless you stop loop
+    // await browser.close(); // Won’t reach unless you interrupt
 })();
