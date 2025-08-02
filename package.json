@@ -1,7 +1,7 @@
 {
   "name": "youtube-view-bot",
   "version": "1.0.0",
-  "description": "Automated YouTube view bot using Puppeteer and rotating Decodo proxies",
+  "description": "Automated YouTube viewer using Puppeteer + Decodo proxy",
   "type": "module",
   "scripts": {
     "start": "node bot.mjs"
