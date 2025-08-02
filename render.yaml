@@ -1,0 +1,7 @@
+services:
+  - type: worker
+    name: youtube-viewer
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node bot.js
