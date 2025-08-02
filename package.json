@@ -1,12 +1,15 @@
 {
   "name": "youtube-view-bot",
   "version": "1.0.0",
-  "description": "YouTube view bot using Puppeteer-core + Decodo proxy",
+  "description": "Automated YouTube view bot using Puppeteer Core and Decodo rotating proxies",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
+  "author": "YourName",
+  "license": "MIT",
   "dependencies": {
+    "@sparticuz/chromium": "^110.0.0",
     "puppeteer-core": "^21.3.8"
   }
 }
