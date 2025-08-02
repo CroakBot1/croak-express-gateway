@@ -1,7 +1,7 @@
 {
   "name": "youtube-viewer-bot",
   "version": "1.0.0",
-  "description": "YouTube viewer bot with Decodo Smartproxy",
+  "description": "YouTube viewer bot with Decodo",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
