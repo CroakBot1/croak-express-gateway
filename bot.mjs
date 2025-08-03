@@ -66,7 +66,7 @@ const viewOnce = async (i, retries = 3) => {
       height: 720 + Math.floor(Math.random() * 200),
     });
 
-    console.log('🌐 Getting IP...');
+    console.log('🌐 Fetching IP...');
     await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded', timeout: 10000 });
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
 
@@ -80,40 +80,42 @@ const viewOnce = async (i, retries = 3) => {
     console.log(`🆕 Unique IP: ${ip}`);
 
     if (usedIPs.size >= MAX_USED_IPS) {
-      console.log(`♻️ Resetting used IP list (limit: ${MAX_USED_IPS})`);
+      console.log(`♻️ Clearing used IPs (reached ${MAX_USED_IPS})`);
       usedIPs.clear();
     }
 
-    console.log(`▶️ Visiting YouTube...`);
-    await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
-
-    console.log(`📺 Watching from ${ip}...`);
+    console.log(`▶️ Navigating to YouTube video...`);
     try {
-      await delay(60000);
-      console.log(`⏱️ Done watching 60s on ${ip}`);
-    } catch (watchErr) {
-      console.log(`⚠️ Watch delay interrupted: ${watchErr.message}`);
+      await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    } catch (gotoErr) {
+      console.error(`❌ Failed to load YouTube video: ${gotoErr.message}`);
+      await browser.close();
+      return;
     }
+
+    console.log(`📺 Watching from IP ${ip}...`);
+    await delay(60000); // 60 seconds
+    console.log(`⏱️ Done watching.`);
 
   } catch (err) {
-    console.error(`❌ View #${i} failed: ${err.message}`);
-    if (browser) await browser.close();
+    console.error(`❌ View #${i} error: ${err.message}`);
     if (retries > 0) {
-      console.log(`🔁 Retrying View #${i} (${retries} retries left)...`);
-      await viewOnce(i, retries - 1);
+      console.log(`🔁 Retrying (#${i})... (${retries - 1} retries left)`);
+      await delay(1000);
+      return await viewOnce(i, retries - 1);
     }
-    return;
+  } finally {
+    if (browser) await browser.close();
   }
 
-  if (browser) await browser.close();
   console.log(`✅ View #${i} complete.`);
-  if (i % 10 === 0) console.log(`❤️ Heartbeat: Running stable for ${i} views`);
+  if (i % 10 === 0) console.log(`❤️ Heartbeat: Still running after ${i} views.`);
   await delay(VIEW_DELAY_MS);
 };
 
 const start = async () => {
   let count = 1;
-  console.log(`🚀 Starting 24/7 forever loop...`);
+  console.log(`🚀 Starting infinite loop...`);
   while (true) {
     await viewOnce(count++);
   }
@@ -125,6 +127,6 @@ http.createServer((req, res) => {
   if (req.url === '/ping') {
     res.end('✅ Ping success!');
   } else {
-    res.end('📺 YouTube view bot is running...');
+    res.end('📺 YouTube view bot running...');
   }
 }).listen(process.env.PORT || 3000);
