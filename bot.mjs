@@ -39,11 +39,12 @@ const getUniquePort = () => {
 const viewOnce = async (i, retries = 3) => {
   const port = getUniquePort();
   const proxy = `http://gate.decodo.com:${port}`;
+  console.log(`🔁 View #${i} via ${proxy}`);
+
   let browser;
 
-  console.log(`\n🔁 View #${i} via ${proxy}`);
-
   try {
+    console.log('🚀 Launching browser...');
     browser = await puppeteer.launch({
       headless: true,
       executablePath: await chromium.executablePath(),
@@ -54,76 +55,86 @@ const viewOnce = async (i, retries = 3) => {
       ],
     });
 
+    console.log('✅ Browser launched.');
     const page = await browser.newPage();
     await page.authenticate({ username, password });
+    console.log('🔐 Proxy authenticated.');
+
     await page.setUserAgent(getRandomUserAgent());
     await page.setViewport({
       width: 1280 + Math.floor(Math.random() * 200),
       height: 720 + Math.floor(Math.random() * 200),
     });
 
-    // Get real IP
-    await page.goto('https://api64.ipify.org?format=json', {
-      waitUntil: 'domcontentloaded',
-      timeout: 10000,
-    });
-
+    console.log('🌐 Fetching IP...');
+    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded', timeout: 10000 });
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
+
     if (usedIPs.has(ip)) {
-      console.log(`⚠️ Duplicate IP ${ip}, skipping...`);
+      console.log(`⚠️ Duplicate IP: ${ip}. Skipping.`);
+      await browser.close();
       return;
     }
 
     usedIPs.add(ip);
     console.log(`🆕 Unique IP: ${ip}`);
     if (usedIPs.size >= MAX_USED_IPS) {
+      console.log(`♻️ Clearing IP memory (limit ${MAX_USED_IPS})`);
       usedIPs.clear();
-      console.log(`♻️ Cleared used IPs list`);
     }
 
-    // Visit YouTube
+    console.log(`▶️ Navigating to video...`);
     await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    console.log(`📺 Watching from IP ${ip}...`);
+
+    console.log(`📺 Watching from ${ip}...`);
     await delay(60000);
     console.log(`⏱️ Done watching.`);
 
   } catch (err) {
-    console.error(`❌ View #${i} error: ${err.message}`);
+    console.error(`❌ View #${i} failed: ${err.message}`);
+    if (browser) await browser.close();
     if (retries > 0) {
-      console.log(`🔁 Retrying View #${i} (${retries - 1} retries left)...`);
-      await delay(2000);
+      console.log(`🔁 Retrying view #${i} (${retries - 1} left)`);
+      await delay(1000);
       return await viewOnce(i, retries - 1);
     }
+    return;
   } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeErr) {
-        console.warn(`⚠️ Browser already closed or failed to close: ${closeErr.message}`);
-      }
-    }
+    if (browser) await browser.close();
   }
 
   console.log(`✅ View #${i} complete.`);
-  if (i % 10 === 0) console.log(`❤️ Heartbeat: running OK after ${i} views`);
-  await delay(VIEW_DELAY_MS);
+  if (i % 10 === 0) console.log(`❤️ Heartbeat: Still alive after ${i} views.`);
+};
+
+// 🔒 Timeout wrapper (max 2 minutes)
+const runWithTimeout = (promise, ms) => {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('⏰ Timeout')), ms)
+  );
+  return Promise.race([promise, timeout]);
 };
 
 const start = async () => {
   let count = 1;
-  console.log(`🚀 Starting infinite view loop...`);
+  console.log(`🚀 Starting infinite loop...`);
   while (true) {
     try {
-      await viewOnce(count++);
-    } catch (err) {
-      console.error(`🔥 Unexpected loop crash: ${err.message}`);
+      await runWithTimeout(viewOnce(count++), 2 * 60 * 1000); // Max 2 mins
+    } catch (e) {
+      console.error(`🔥 viewOnce error: ${e.message}`);
     }
+    await delay(VIEW_DELAY_MS);
   }
 };
 
 start();
 
-// Keep service alive
+// 🔂 Keep Render service alive
 http.createServer((req, res) => {
-  res.end(req.url === '/ping' ? '✅ Ping success!' : '📺 YouTube view bot running...');
+  if (req.url === '/ping') {
+    res.end('✅ Ping success!');
+  } else {
+    res.end('📺 YouTube bot is running...');
+  }
 }).listen(process.env.PORT || 3000);
