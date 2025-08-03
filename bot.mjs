@@ -1,4 +1,3 @@
-
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import http from 'http';
@@ -7,7 +6,6 @@ chromium.setHeadlessMode = true;
 chromium.setGraphicsMode = false;
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=LaEir9XtNiY';
-const TOTAL_VIEWS = 1000;
 const VIEW_DELAY_MS = 1000;
 const username = 'spw95jq2io';
 const password = '~jVy74ixsez5tWW6Cr';
@@ -36,7 +34,7 @@ const getUniquePort = () => {
   return port;
 };
 
-const viewOnce = async (i) => {
+const viewOnce = async (i, retries = 3) => {
   const port = getUniquePort();
   const proxy = `http://gate.decodo.com:${port}`;
 
@@ -60,16 +58,26 @@ const viewOnce = async (i) => {
     await page.authenticate({ username, password });
     await page.setUserAgent(getRandomUserAgent());
 
+    await page.setViewport({
+      width: 1280 + Math.floor(Math.random() * 200),
+      height: 720 + Math.floor(Math.random() * 200),
+    });
+
     await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
     console.log(`🕵️ Real IP: ${ip}`);
 
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
-    await delay(60000);
+    await delay(60000); // Watch for 60 seconds
 
   } catch (err) {
     console.error(`❌ View #${i} failed: ${err.message}`);
+    if (retries > 0) {
+      console.log(`🔁 Retrying View #${i}... Attempts left: ${retries}`);
+      await viewOnce(i, retries - 1);
+      return;
+    }
   }
 
   if (browser) await browser.close();
@@ -78,16 +86,20 @@ const viewOnce = async (i) => {
 };
 
 const start = async () => {
-  console.log(`🚀 Starting 1-by-1 mode for ${TOTAL_VIEWS} views...`);
-  for (let i = 1; i <= TOTAL_VIEWS; i++) {
-    await viewOnce(i);
+  let count = 1;
+  console.log(`🚀 Starting 24/7 forever loop...`);
+  while (true) {
+    await viewOnce(count++);
   }
-  console.log(`🎉 All ${TOTAL_VIEWS} views done!`);
 };
 
 start();
 
-// ✅ Dummy HTTP server to satisfy Render Web Service scan
+// ✅ Keeps Render alive
 http.createServer((req, res) => {
-  res.end('📺 YouTube view bot is running...');
+  if (req.url === '/ping') {
+    res.end('✅ Ping success!');
+  } else {
+    res.end('📺 YouTube view bot is running forever...');
+  }
 }).listen(process.env.PORT || 3000);
