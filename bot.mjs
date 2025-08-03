@@ -12,7 +12,8 @@ const password = '~jVy74ixsez5tWW6Cr';
 
 const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
 let usedPorts = new Set();
-const usedIPs = new Set(); // ✅ TRACK USED IPs
+const usedIPs = new Set(); // ✅ Track used IPs
+const MAX_USED_IPS = 500;  // ♻️ Auto-reset after 500
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -74,11 +75,17 @@ const viewOnce = async (i, retries = 3) => {
     } else {
       usedIPs.add(ip);
       console.log(`🆕 Unique IP: ${ip}`);
+
+      // ♻️ Auto-clean used IPs if too many
+      if (usedIPs.size >= MAX_USED_IPS) {
+        console.log(`♻️ Clearing used IP memory (reached ${MAX_USED_IPS})`);
+        usedIPs.clear();
+      }
     }
 
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
-    await delay(60000); // Watch 60s
+    await delay(60000); // Watch for 60 seconds
 
   } catch (err) {
     console.error(`❌ View #${i} failed: ${err.message}`);
