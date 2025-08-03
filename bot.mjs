@@ -12,6 +12,7 @@ const password = '~jVy74ixsez5tWW6Cr';
 
 const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
 let usedPorts = new Set();
+const usedIPs = new Set(); // ✅ TRACK USED IPs
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
@@ -65,11 +66,19 @@ const viewOnce = async (i, retries = 3) => {
 
     await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded' });
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
-    console.log(`🕵️ Real IP: ${ip}`);
+
+    if (usedIPs.has(ip)) {
+      console.log(`⚠️ Duplicate IP detected: ${ip}. Skipping this view.`);
+      await browser.close();
+      return;
+    } else {
+      usedIPs.add(ip);
+      console.log(`🆕 Unique IP: ${ip}`);
+    }
 
     await page.goto(VIDEO_URL, { waitUntil: 'networkidle2', timeout: 60000 });
     console.log(`📺 Watching video on ${ip}...`);
-    await delay(60000); // Watch for 60 seconds
+    await delay(60000); // Watch 60s
 
   } catch (err) {
     console.error(`❌ View #${i} failed: ${err.message}`);
