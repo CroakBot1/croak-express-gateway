@@ -85,24 +85,23 @@ const viewOnce = async (i, retries = 3) => {
     }
 
     console.log(`▶️ Navigating to YouTube video...`);
-    try {
-      await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    } catch (gotoErr) {
-      console.error(`❌ Failed to load YouTube video: ${gotoErr.message}`);
-      await browser.close();
-      return;
-    }
+    await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     console.log(`📺 Watching from IP ${ip}...`);
-    await delay(60000); // 60 seconds
+    await delay(60000);
     console.log(`⏱️ Done watching.`);
 
   } catch (err) {
     console.error(`❌ View #${i} error: ${err.message}`);
+    if (browser) await browser.close();
+
     if (retries > 0) {
       console.log(`🔁 Retrying (#${i})... (${retries - 1} retries left)`);
       await delay(1000);
       return await viewOnce(i, retries - 1);
+    } else {
+      console.log(`⛔ No more retries left for View #${i}. Skipping.`);
+      return;
     }
   } finally {
     if (browser) await browser.close();
@@ -123,6 +122,7 @@ const start = async () => {
 
 start();
 
+// Keeps Render service alive
 http.createServer((req, res) => {
   if (req.url === '/ping') {
     res.end('✅ Ping success!');
