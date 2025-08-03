@@ -15,7 +15,13 @@ const usedPorts = new Set();
 const usedIPs = new Set();
 const MAX_USED_IPS = 500;
 
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+const runWithTimeout = (promise, ms, stage) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`⏰ Timeout during ${stage}`)), ms)),
+  ]);
 
 const getRandomUserAgent = () => {
   const agents = [
@@ -40,34 +46,34 @@ const viewOnce = async (i, retries = 3) => {
   const port = getUniquePort();
   const proxy = `http://gate.decodo.com:${port}`;
   console.log(`🔁 View #${i} via ${proxy}`);
-
   let browser;
 
   try {
     console.log('🚀 Launching browser...');
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath: await chromium.executablePath(),
-      args: [
-        `--proxy-server=${proxy}`,
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-      ],
-    });
+    browser = await runWithTimeout(
+      puppeteer.launch({
+        headless: true,
+        executablePath: await chromium.executablePath(),
+        args: [`--proxy-server=${proxy}`, '--no-sandbox', '--disable-setuid-sandbox'],
+      }),
+      20000,
+      'browser launch'
+    );
 
-    console.log('✅ Browser launched.');
     const page = await browser.newPage();
     await page.authenticate({ username, password });
-    console.log('🔐 Proxy authenticated.');
-
     await page.setUserAgent(getRandomUserAgent());
     await page.setViewport({
       width: 1280 + Math.floor(Math.random() * 200),
       height: 720 + Math.floor(Math.random() * 200),
     });
 
-    console.log('🌐 Fetching IP...');
-    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded', timeout: 10000 });
+    console.log('🌐 Getting IP...');
+    await runWithTimeout(
+      page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded', timeout: 10000 }),
+      15000,
+      'IP fetch'
+    );
     const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
 
     if (usedIPs.has(ip)) {
@@ -79,19 +85,21 @@ const viewOnce = async (i, retries = 3) => {
     usedIPs.add(ip);
     console.log(`🆕 Unique IP: ${ip}`);
     if (usedIPs.size >= MAX_USED_IPS) {
-      console.log(`♻️ Clearing IP memory (limit ${MAX_USED_IPS})`);
       usedIPs.clear();
     }
 
-    console.log(`▶️ Navigating to video...`);
-    await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    console.log('▶️ Navigating to YouTube...');
+    await runWithTimeout(
+      page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }),
+      30000,
+      'YouTube load'
+    );
 
     console.log(`📺 Watching from ${ip}...`);
     await delay(60000);
-    console.log(`⏱️ Done watching.`);
 
   } catch (err) {
-    console.error(`❌ View #${i} failed: ${err.message}`);
+    console.error(`❌ View #${i} error: ${err.message}`);
     if (browser) await browser.close();
     if (retries > 0) {
       console.log(`🔁 Retrying view #${i} (${retries - 1} left)`);
@@ -99,20 +107,11 @@ const viewOnce = async (i, retries = 3) => {
       return await viewOnce(i, retries - 1);
     }
     return;
-  } finally {
-    if (browser) await browser.close();
   }
 
+  if (browser) await browser.close();
   console.log(`✅ View #${i} complete.`);
-  if (i % 10 === 0) console.log(`❤️ Heartbeat: Still alive after ${i} views.`);
-};
-
-// 🔒 Timeout wrapper (max 2 minutes)
-const runWithTimeout = (promise, ms) => {
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('⏰ Timeout')), ms)
-  );
-  return Promise.race([promise, timeout]);
+  if (i % 10 === 0) console.log(`❤️ Heartbeat: Running OK after ${i} views.`);
 };
 
 const start = async () => {
@@ -120,9 +119,9 @@ const start = async () => {
   console.log(`🚀 Starting infinite loop...`);
   while (true) {
     try {
-      await runWithTimeout(viewOnce(count++), 2 * 60 * 1000); // Max 2 mins
+      await runWithTimeout(viewOnce(count++), 90000, 'full view loop'); // max 90s
     } catch (e) {
-      console.error(`🔥 viewOnce error: ${e.message}`);
+      console.error(`🔥 Hard timeout: ${e.message}`);
     }
     await delay(VIEW_DELAY_MS);
   }
@@ -130,7 +129,7 @@ const start = async () => {
 
 start();
 
-// 🔂 Keep Render service alive
+// Keep alive ping
 http.createServer((req, res) => {
   if (req.url === '/ping') {
     res.end('✅ Ping success!');
