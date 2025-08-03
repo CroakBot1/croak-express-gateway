@@ -11,11 +11,11 @@ const username = 'spw95jq2io';
 const password = '~jVy74ixsez5tWW6Cr';
 
 const ports = Array.from({ length: 100000 }, (_, i) => 10001 + i);
-let usedPorts = new Set();
+const usedPorts = new Set();
 const usedIPs = new Set();
 const MAX_USED_IPS = 500;
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
 const getRandomUserAgent = () => {
   const agents = [
@@ -39,12 +39,11 @@ const getUniquePort = () => {
 const viewOnce = async (i, retries = 3) => {
   const port = getUniquePort();
   const proxy = `http://gate.decodo.com:${port}`;
-  console.log(`🔁 View #${i} via ${proxy}`);
-
   let browser;
 
+  console.log(`\n🔁 View #${i} via ${proxy}`);
+
   try {
-    console.log('🚀 Launching browser...');
     browser = await puppeteer.launch({
       headless: true,
       executablePath: await chromium.executablePath(),
@@ -54,79 +53,77 @@ const viewOnce = async (i, retries = 3) => {
         '--disable-setuid-sandbox',
       ],
     });
-    console.log('✅ Browser launched.');
 
     const page = await browser.newPage();
     await page.authenticate({ username, password });
-    console.log('🔐 Proxy authenticated.');
     await page.setUserAgent(getRandomUserAgent());
-
     await page.setViewport({
       width: 1280 + Math.floor(Math.random() * 200),
       height: 720 + Math.floor(Math.random() * 200),
     });
 
-    console.log('🌐 Fetching IP...');
-    await page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded', timeout: 10000 });
-    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
+    // Get real IP
+    await page.goto('https://api64.ipify.org?format=json', {
+      waitUntil: 'domcontentloaded',
+      timeout: 10000,
+    });
 
+    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
     if (usedIPs.has(ip)) {
-      console.log(`⚠️ Duplicate IP detected: ${ip}. Skipping.`);
-      await browser.close();
+      console.log(`⚠️ Duplicate IP ${ip}, skipping...`);
       return;
     }
 
     usedIPs.add(ip);
     console.log(`🆕 Unique IP: ${ip}`);
-
     if (usedIPs.size >= MAX_USED_IPS) {
-      console.log(`♻️ Clearing used IPs (reached ${MAX_USED_IPS})`);
       usedIPs.clear();
+      console.log(`♻️ Cleared used IPs list`);
     }
 
-    console.log(`▶️ Navigating to YouTube video...`);
+    // Visit YouTube
     await page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
     console.log(`📺 Watching from IP ${ip}...`);
     await delay(60000);
     console.log(`⏱️ Done watching.`);
 
   } catch (err) {
     console.error(`❌ View #${i} error: ${err.message}`);
-    if (browser) await browser.close();
-
     if (retries > 0) {
-      console.log(`🔁 Retrying (#${i})... (${retries - 1} retries left)`);
-      await delay(1000);
+      console.log(`🔁 Retrying View #${i} (${retries - 1} retries left)...`);
+      await delay(2000);
       return await viewOnce(i, retries - 1);
-    } else {
-      console.log(`⛔ No more retries left for View #${i}. Skipping.`);
-      return;
     }
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeErr) {
+        console.warn(`⚠️ Browser already closed or failed to close: ${closeErr.message}`);
+      }
+    }
   }
 
   console.log(`✅ View #${i} complete.`);
-  if (i % 10 === 0) console.log(`❤️ Heartbeat: Still running after ${i} views.`);
+  if (i % 10 === 0) console.log(`❤️ Heartbeat: running OK after ${i} views`);
   await delay(VIEW_DELAY_MS);
 };
 
 const start = async () => {
   let count = 1;
-  console.log(`🚀 Starting infinite loop...`);
+  console.log(`🚀 Starting infinite view loop...`);
   while (true) {
-    await viewOnce(count++);
+    try {
+      await viewOnce(count++);
+    } catch (err) {
+      console.error(`🔥 Unexpected loop crash: ${err.message}`);
+    }
   }
 };
 
 start();
 
-// Keeps Render service alive
+// Keep service alive
 http.createServer((req, res) => {
-  if (req.url === '/ping') {
-    res.end('✅ Ping success!');
-  } else {
-    res.end('📺 YouTube view bot running...');
-  }
+  res.end(req.url === '/ping' ? '✅ Ping success!' : '📺 YouTube view bot running...');
 }).listen(process.env.PORT || 3000);
