@@ -1,19 +1,24 @@
 {
-  "name": "youtube-view-bot",
+  "name": "youlikehits-frontend-bot",
   "version": "1.0.0",
-  "description": "Automated YouTube viewer using Puppeteer + Decodo proxy",
+  "description": "Frontend YouLikeHits bot using Decodo proxy, Render server, and zero memory load",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node bot.mjs",
-    "server": "node server.js"
+    "start": "node server.js"
   },
-  "dependencies": {
-    "puppeteer-core": "^21.3.8",
-    "@sparticuz/chromium": "^110.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "keywords": [
+    "youlikehits",
+    "bot",
+    "frontend",
+    "proxy",
+    "decodo",
+    "render"
+  ],
   "author": "YourName",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "request": "^2.88.2"
+  }
 }
