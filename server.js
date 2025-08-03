@@ -34,7 +34,24 @@ const loginToYouLikeHits = async () => {
   }
 };
 
-// Proxy YouLikeHits with session cookie + Debug Logs
+// Debugger checker
+const analyzeHTML = (html) => {
+  const lower = html.toLowerCase();
+
+  if (lower.includes('you must login')) {
+    console.log('🔒 Not logged in — login session invalid or expired.');
+  } else if (lower.includes('no more youtube views') || lower.includes('no more videos')) {
+    console.log('🚫 No available YouTube view tasks right now.');
+  } else if (lower.includes('account disabled') || lower.includes('banned')) {
+    console.log('❌ Account appears disabled or banned.');
+  } else if (lower.includes('input type="submit"') && lower.includes('value="view"')) {
+    console.log('✅ View button detected — task available.');
+  } else {
+    console.log('❓ Could not determine page status. Manual check recommended.');
+  }
+};
+
+// Proxy with debugging logic
 app.get('/proxy', async (req, res) => {
   const target = req.query.url;
   if (!target) return res.status(400).send('Missing URL');
@@ -52,10 +69,9 @@ app.get('/proxy', async (req, res) => {
 
     const html = await response.text();
 
-    // 🔍 Log part of the fetched HTML for debugging
     console.log('\n🔍 [Proxy HTML Preview]');
-    console.log(html.slice(0, 500)); // Print first 500 characters for inspection
-    console.log('...');
+    console.log(html.slice(0, 500));
+    analyzeHTML(html); // 👈 automatic status analysis
 
     res.send(html);
   } catch (err) {
@@ -64,7 +80,7 @@ app.get('/proxy', async (req, res) => {
   }
 });
 
-// Manual restart endpoint
+// Restart endpoint
 app.get('/restart-bot', (req, res) => {
   exec('node bot.mjs', (err, stdout, stderr) => {
     if (err || stderr) return res.status(500).send(err?.message || stderr);
@@ -72,9 +88,9 @@ app.get('/restart-bot', (req, res) => {
   });
 });
 
-// Health check
+// Ping
 app.get('/ping', (_, res) => res.send('✅ Ping success!'));
 
 http.createServer(app).listen(PORT, () => {
-  console.log(`🚀 Ping + Proxy Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Debug Proxy Server running on http://localhost:${PORT}`);
 });
