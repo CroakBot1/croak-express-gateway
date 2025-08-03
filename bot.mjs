@@ -20,7 +20,9 @@ const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 const runWithTimeout = (promise, ms, stage) =>
   Promise.race([
     promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`⏰ Timeout during ${stage}`)), ms)),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`⏰ Timeout during ${stage}`)), ms)
+    ),
   ]);
 
 const getRandomUserAgent = () => {
@@ -49,12 +51,17 @@ const viewOnce = async (i, retries = 3) => {
   let browser;
 
   try {
-    console.log('🚀 Launching browser...');
+    const exePath = await chromium.executablePath();
+    console.log(`🧠 Using Chromium path: ${exePath}`);
     browser = await runWithTimeout(
       puppeteer.launch({
-        headless: true,
-        executablePath: await chromium.executablePath(),
-        args: [`--proxy-server=${proxy}`, '--no-sandbox', '--disable-setuid-sandbox'],
+        headless: chromium.headless,
+        executablePath: exePath,
+        args: [
+          `--proxy-server=${proxy}`,
+          ...chromium.args,
+        ],
+        defaultViewport: chromium.defaultViewport,
       }),
       20000,
       'browser launch'
@@ -68,27 +75,23 @@ const viewOnce = async (i, retries = 3) => {
       height: 720 + Math.floor(Math.random() * 200),
     });
 
-    console.log('🌐 Getting IP...');
     await runWithTimeout(
       page.goto('https://api64.ipify.org?format=json', { waitUntil: 'domcontentloaded', timeout: 10000 }),
       15000,
       'IP fetch'
     );
-    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
 
+    const ip = await page.evaluate(() => JSON.parse(document.body.innerText).ip);
     if (usedIPs.has(ip)) {
       console.log(`⚠️ Duplicate IP: ${ip}. Skipping.`);
       await browser.close();
       return;
     }
-
     usedIPs.add(ip);
     console.log(`🆕 Unique IP: ${ip}`);
-    if (usedIPs.size >= MAX_USED_IPS) {
-      usedIPs.clear();
-    }
+    if (usedIPs.size >= MAX_USED_IPS) usedIPs.clear();
 
-    console.log('▶️ Navigating to YouTube...');
+    console.log(`▶️ Visiting YouTube...`);
     await runWithTimeout(
       page.goto(VIDEO_URL, { waitUntil: 'domcontentloaded', timeout: 20000 }),
       30000,
@@ -111,7 +114,7 @@ const viewOnce = async (i, retries = 3) => {
 
   if (browser) await browser.close();
   console.log(`✅ View #${i} complete.`);
-  if (i % 10 === 0) console.log(`❤️ Heartbeat: Running OK after ${i} views.`);
+  if (i % 10 === 0) console.log(`❤️ Heartbeat after ${i} views`);
 };
 
 const start = async () => {
@@ -119,7 +122,7 @@ const start = async () => {
   console.log(`🚀 Starting infinite loop...`);
   while (true) {
     try {
-      await runWithTimeout(viewOnce(count++), 90000, 'full view loop'); // max 90s
+      await runWithTimeout(viewOnce(count++), 90000, 'full view loop');
     } catch (e) {
       console.error(`🔥 Hard timeout: ${e.message}`);
     }
@@ -129,11 +132,11 @@ const start = async () => {
 
 start();
 
-// Keep alive ping
+// Keep-alive
 http.createServer((req, res) => {
   if (req.url === '/ping') {
     res.end('✅ Ping success!');
   } else {
-    res.end('📺 YouTube bot is running...');
+    res.end('📺 YouTube view bot running...');
   }
 }).listen(process.env.PORT || 3000);
