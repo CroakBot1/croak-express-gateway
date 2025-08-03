@@ -34,7 +34,7 @@ const loginToYouLikeHits = async () => {
   }
 };
 
-// Proxy YouLikeHits with session cookie
+// Proxy YouLikeHits with session cookie + Debug Logs
 app.get('/proxy', async (req, res) => {
   const target = req.query.url;
   if (!target) return res.status(400).send('Missing URL');
@@ -51,6 +51,12 @@ app.get('/proxy', async (req, res) => {
     });
 
     const html = await response.text();
+
+    // 🔍 Log part of the fetched HTML for debugging
+    console.log('\n🔍 [Proxy HTML Preview]');
+    console.log(html.slice(0, 500)); // Print first 500 characters for inspection
+    console.log('...');
+
     res.send(html);
   } catch (err) {
     console.error(`❌ Proxy error: ${err.message}`);
@@ -58,7 +64,7 @@ app.get('/proxy', async (req, res) => {
   }
 });
 
-// Manual restart if needed
+// Manual restart endpoint
 app.get('/restart-bot', (req, res) => {
   exec('node bot.mjs', (err, stdout, stderr) => {
     if (err || stderr) return res.status(500).send(err?.message || stderr);
@@ -66,7 +72,7 @@ app.get('/restart-bot', (req, res) => {
   });
 });
 
-// Basic ping endpoint
+// Health check
 app.get('/ping', (_, res) => res.send('✅ Ping success!'));
 
 http.createServer(app).listen(PORT, () => {
