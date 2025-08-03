@@ -132,11 +132,11 @@ const start = async () => {
 
 start();
 
-// Keep-alive
+// Keeps service alive on Render
 http.createServer((req, res) => {
   if (req.url === '/ping') {
     res.end('✅ Ping success!');
   } else {
-    res.end('📺 YouTube view bot running...');
+    res.end('📺 YouTube view bot is running...');
   }
 }).listen(process.env.PORT || 3000);
