@@ -209,3 +209,49 @@ app.get('/stop', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+console.log(`🌍 Starting: ${proxy.country} (${proxy.host}:${proxy.port})`);
+
+try {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: [
+      `--proxy-server=${proxy.host}:${proxy.port}`,
+      '--no-sandbox',
+      '--disable-setuid-sandbox'
+    ]
+  });
+
+  console.log(`🧠 Browser launched for ${proxy.country}`);
+  const page = await browser.newPage();
+
+  await page.authenticate({ username: proxyUser, password: proxyPass });
+  console.log(`🔐 Authenticated for ${proxy.country}`);
+
+  await page.setRequestInterception(true);
+  page.on('request', req => {
+    const type = req.resourceType();
+    if (['image', 'stylesheet', 'font'].includes(type)) {
+      req.abort();
+    } else {
+      req.continue();
+    }
+  });
+
+  console.log(`🌐 Navigating to FB video from ${proxy.country}`);
+  await page.goto(fbVideoURL, { waitUntil: 'networkidle2', timeout: 60000 });
+
+  const waitTime = 35000 + Math.random() * 15000;
+  console.log(`⏳ Watching for ${Math.round(waitTime / 1000)}s...`);
+  await page.waitForTimeout(waitTime);
+
+  logs.push(`✅ Viewed from ${proxy.country}`);
+  console.log(`✅ Viewed from ${proxy.country}`);
+
+  await browser.close();
+  console.log(`❎ Browser closed for ${proxy.country}`);
+} catch (err) {
+  logs.push(`❌ ${proxy.country} failed: ${err.message}`);
+  console.error(`❌ Error trace [${proxy.country}]:`, err.stack);
+}
+
