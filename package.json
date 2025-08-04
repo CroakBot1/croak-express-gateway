@@ -1,24 +1,14 @@
 {
-  "name": "youlikehits-frontend-bot",
+  "name": "fb-global-viewer",
   "version": "1.0.0",
-  "description": "Frontend YouLikeHits bot using Decodo proxy, Render server, and zero memory load",
-  "main": "server.js",
-  "type": "module",
+  "description": "Facebook Global View Bot using Puppeteer + Decodo",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node index.js"
   },
-  "keywords": [
-    "youlikehits",
-    "bot",
-    "frontend",
-    "proxy",
-    "decodo",
-    "render"
-  ],
-  "author": "YourName",
-  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "node-fetch": "^3.3.2"
+    "puppeteer-extra": "^3.3.4",
+    "puppeteer-extra-plugin-stealth": "^2.11.1"
   }
 }
