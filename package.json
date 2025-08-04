@@ -1,8 +1,9 @@
 {
   "name": "fb-global-viewer",
   "version": "1.0.0",
-  "description": "Facebook Global View Bot using Puppeteer + Decodo",
+  "description": "Facebook Global Video View Bot",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
