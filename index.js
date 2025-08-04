@@ -92,14 +92,15 @@ app.get('/loop', async (req, res) => {
   if (looping) return res.send('🔁 Already looping.');
 
   looping = true;
-  res.send('🔁 Loop mode started. Views every 5 minutes.');
+  res.send('🔁 Loop mode started. Views every 1 minute.');
 
-  const loop = async () => {
+  const interval = 60 * 1000; // 1 minute
+  async function loop() {
     if (!looping) return;
-    console.log('🔁 Running scheduled view cycle...');
+    console.log('🔁 Running high-speed view cycle...');
     await runViewCycle();
-    setTimeout(loop, 5 * 60 * 1000); // 5 mins
-  };
+    setTimeout(loop, interval);
+  }
 
   loop();
 });
