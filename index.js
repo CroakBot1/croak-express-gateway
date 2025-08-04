@@ -1,4 +1,4 @@
-// 🌐 Express backend for FB Global Viewer (Render-ready)
+// 🌐 Express backend for FB Global Viewer (Render-ready, fixed)
 import express from 'express';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -8,10 +8,14 @@ puppeteer.use(StealthPlugin());
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Decodo credentials
 const proxyUser = 'spw95jq2io';
 const proxyPass = '~jVy74ixsez5tWW6Cr';
+
+// Target FB video
 const fbVideoURL = 'https://m.facebook.com/share/v/177AxvRKYW/';
 
+// List of proxies to simulate global views
 const proxyList = [
   { country: 'US', host: 'us.decodo.io', port: '12345' },
   { country: 'PH', host: 'ph.decodo.io', port: '12345' },
@@ -33,13 +37,17 @@ app.get('/view', async (req, res) => {
     try {
       const browser = await puppeteer.launch({
         headless: true,
-        args: [`--proxy-server=${proxy.host}:${proxy.port}`, '--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+          `--proxy-server=${proxy.host}:${proxy.port}`,
+          '--no-sandbox',
+          '--disable-setuid-sandbox'
+        ]
       });
 
       const page = await browser.newPage();
       await page.authenticate({ username: proxyUser, password: proxyPass });
 
-      // Block images, fonts, styles to save MB
+      // Block heavy content
       await page.setRequestInterception(true);
       page.on('request', req => {
         const type = req.resourceType();
@@ -50,8 +58,9 @@ app.get('/view', async (req, res) => {
         }
       });
 
+      // Load and wait on the video page
       await page.goto(fbVideoURL, { waitUntil: 'networkidle2', timeout: 60000 });
-      await page.waitForTimeout(35000 + Math.random() * 15000);
+      await page.waitForTimeout(35000 + Math.random() * 15000); // 35–50 seconds
 
       logs.push(`✅ Viewed from ${proxy.country}`);
       await browser.close();
