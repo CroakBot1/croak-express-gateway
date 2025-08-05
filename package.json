@@ -1,7 +1,7 @@
 {
   "name": "websocket-messenger-backend",
   "version": "1.0.0",
-  "description": "Real-time WebSocket Messenger Backend with Login, Register, User Search, and Keep-Alive Ping",
+  "description": "Real-time Messenger with WebSocket, Express, Login, Register, and User Search",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,9 +9,10 @@
   "keywords": [
     "websocket",
     "messenger",
+    "chat",
     "nodejs",
     "express",
-    "chat"
+    "realtime"
   ],
   "author": "Your Name",
   "license": "MIT",
