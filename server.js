@@ -1,4 +1,3 @@
-
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
@@ -50,16 +49,4 @@ app.post("/render", (req, res) => {
 
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
-});
-
-// keep-alive.js
-const https = require("https");
-
-// Replace this with your actual server URL
-const url = "https://your-server-url.com/ping";
-
-https.get(url, (res) => {
-  console.log(`[✅] Pinged ${url} | Status: ${res.statusCode}`);
-}).on("error", (err) => {
-  console.error(`[❌] Error pinging ${url} | ${err.message}`);
 });
