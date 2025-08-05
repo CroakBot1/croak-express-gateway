@@ -11,11 +11,11 @@ const wss = new WebSocket.Server({ server });
 app.use(cors());
 app.use(bodyParser.json());
 
-// In-memory storage (replace with DB later)
-const users = {}; // { username: password }
-const activeConnections = new Map(); // { username: ws }
+// In-memory users: { username: password }
+const users = {};
+const sockets = new Map(); // { username: WebSocket }
 
-// 🔐 Register
+// ✅ Register
 app.post("/register", (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -25,94 +25,81 @@ app.post("/register", (req, res) => {
     return res.status(409).json({ success: false, message: "Username taken" });
   }
   users[username] = password;
-  res.json({ success: true, message: "User registered" });
+  console.log(`✅ Registered: ${username}`);
+  return res.json({ success: true });
 });
 
-// 🔐 Login
+// ✅ Login
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  if (users[username] && users[username] === password) {
-    res.json({ success: true, username });
+  if (users[username] === password) {
+    console.log(`🔐 Logged in: ${username}`);
+    return res.json({ success: true, username });
   } else {
-    res.status(401).json({ success: false, message: "Invalid credentials" });
+    return res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 });
 
 // 🔍 Search users
 app.get("/users", (req, res) => {
-  const { q } = req.query;
-  if (!q) return res.json([]);
-  const result = Object.keys(users).filter((u) =>
-    u.toLowerCase().includes(q.toLowerCase())
-  );
-  res.json(result);
+  const q = req.query.q || "";
+  const found = Object.keys(users).filter(u => u.includes(q));
+  res.json(found);
 });
 
-// 🔁 Keep-alive endpoint
+// 🟢 Keep-alive endpoint (for cronjob pings)
 app.get("/ping", (req, res) => {
-  res.send("🟢 Server is alive");
+  res.send("🟢 Server alive");
 });
 
-// 🧠 WebSocket real-time messaging
+// 🔁 WebSocket Chat
 wss.on("connection", (ws) => {
-  let username = null;
+  let currentUser = null;
 
-  ws.on("message", (msg) => {
+  ws.on("message", (raw) => {
     try {
-      const data = JSON.parse(msg);
+      const data = JSON.parse(raw);
 
-      // Initial authentication after connecting
       if (data.type === "auth") {
-        username = data.username;
-        activeConnections.set(username, ws);
-        console.log(`✅ ${username} connected`);
-
-        // Notify other users
-        broadcast(`${username} joined the chat`, username);
+        currentUser = data.username;
+        sockets.set(currentUser, ws);
+        console.log(`📡 ${currentUser} connected`);
+        return;
       }
 
-      // Handle chat messages
-      if (data.type === "chat" && username) {
-        const message = {
-          from: username,
-          to: data.to || "everyone",
+      if (data.type === "chat" && currentUser) {
+        const payload = {
+          from: currentUser,
+          to: data.to,
           text: data.text,
-          time: new Date().toISOString()
+          type: "chat",
         };
 
-        if (data.to && data.to !== "everyone") {
-          // Send private message
-          const targetWS = activeConnections.get(data.to);
-          if (targetWS && targetWS.readyState === WebSocket.OPEN) {
-            targetWS.send(JSON.stringify({ type: "chat", ...message }));
+        if (data.to === "everyone") {
+          for (let [user, client] of sockets.entries()) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(payload));
+            }
           }
         } else {
-          // Broadcast to everyone
-          broadcast(JSON.stringify({ type: "chat", ...message }), username);
+          const target = sockets.get(data.to);
+          if (target && target.readyState === WebSocket.OPEN) {
+            target.send(JSON.stringify(payload));
+          }
         }
       }
     } catch (err) {
-      console.error("❌ Invalid message", err.message);
+      console.error("❌ Error:", err.message);
     }
   });
 
   ws.on("close", () => {
-    if (username) {
-      console.log(`❌ ${username} disconnected`);
-      activeConnections.delete(username);
-      broadcast(`${username} left the chat`, username);
+    if (currentUser) {
+      sockets.delete(currentUser);
+      console.log(`🔌 ${currentUser} disconnected`);
     }
   });
 });
 
-// Helper function to broadcast to all users except sender
-function broadcast(message, sender) {
-  for (let [user, client] of activeConnections.entries()) {
-    if (user !== sender && client.readyState === WebSocket.OPEN) {
-      client.send(typeof message === "string" ? message : JSON.stringify(message));
-    }
-  }
-}
-
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Backend running at http://localhost:${PORT}`));
