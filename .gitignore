@@ -1,3 +1,6 @@
-node_modules/
-saved-logins.txt
-.env
+git init
+git add .
+git commit -m "Initial commit - Mobile CCTV viewer"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/mobile-cctv-viewer.git
+git push -u origin main
