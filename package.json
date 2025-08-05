@@ -1,12 +1,16 @@
+
 {
-  "name": "mobile-cctv",
+  "name": "mobile-cctv-viewer",
   "version": "1.0.0",
+  "description": "Auto-connect mobile camera to backend live viewer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "author": "Personal Use",
+  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "multer": "1.4.4"
+    "multer": "^1.4.5"
   }
 }
