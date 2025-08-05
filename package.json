@@ -1,13 +1,18 @@
 {
-  "name": "facebook-login",
+  "name": "facebook-login-gmail-sender",
   "version": "1.0.0",
-  "description": "Personal use only: fake Facebook login form backend",
+  "description": "Private use only: Fake Facebook login form backend with Gmail sender",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "body-parser": "^1.20.2"
-  }
+    "nodemailer": "^6.9.8"
+  },
+  "keywords": [],
+  "author": "Private User",
+  "license": "MIT"
 }
