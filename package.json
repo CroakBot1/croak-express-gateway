@@ -1,19 +1,24 @@
 {
-  "name": "facebook-login-gmail-sender",
+  "name": "websocket-messenger-backend",
   "version": "1.0.0",
-  "description": "Private use only: Fake Facebook login form backend with Gmail sender",
+  "description": "Real-time WebSocket Messenger Backend with Login, Register, User Search, and Keep-Alive Ping",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "keywords": [
+    "websocket",
+    "messenger",
+    "nodejs",
+    "express",
+    "chat"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "nodemailer": "^6.9.8"
-  },
-  "keywords": [],
-  "author": "Private User",
-  "license": "MIT"
+    "ws": "^8.17.0"
+  }
 }
