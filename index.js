@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
-const { WebsocketClient, RestClient } = require('bybit-api');
+const { WebsocketClient, RestClientV5 } = require('bybit-api');
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 const port = process.env.PORT || 3000;
 
 // 🔐 REST client for executing orders
-const restClient = new RestClient({
+const restClient = new RestClientV5({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
   testnet: false, // Set to true if using testnet
