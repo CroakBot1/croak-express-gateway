@@ -1,43 +1,57 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config();
-const axios = require('axios');
+import express from 'express';
+import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
+import { RestClientV5 } from '@bybit-api/sdk';
 
+dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
 app.use(bodyParser.json());
 
-// Endpoint to receive buy/sell signals from frontend
-app.post('/signal', async (req, res) => {
-  const { action } = req.body;
+const client = new RestClientV5({
+  key: process.env.BYBIT_API_KEY,
+  secret: process.env.BYBIT_API_SECRET,
+  testnet: false, // set to true if you are using testnet
+});
 
-  if (!['buy', 'sell'].includes(action)) {
-    return res.status(400).json({ message: 'Invalid action.' });
-  }
+app.post('/signal', async (req, res) => {
+  const { signal } = req.body;
+  console.log(`📡 Received signal: ${signal}`);
 
   try {
-    // Example: send order to Bybit
-    const result = await axios.post('https://api.bybit.com/v5/order/create', {
-      category: 'linear',
-      symbol: 'ETHUSDT',
-      side: action.toUpperCase(),
-      orderType: 'Market',
-      qty: 0.01,
-      timeInForce: 'GoodTillCancel',
-      apiKey: process.env.BYBIT_API_KEY,
-      // Add signature and secret logic if needed here
-    });
+    const symbol = 'BTCUSDT';
+    const qty = 0.01;
 
-    res.json({ message: `${action} order sent`, result: result.data });
+    if (signal === 'BUY') {
+      const order = await client.submitOrder({
+        category: 'linear',
+        symbol,
+        side: 'Buy',
+        orderType: 'Market',
+        qty,
+        timeInForce: 'GoodTillCancel',
+      });
+      console.log('✅ BUY Order Sent:', order);
+      res.send({ status: 'BUY Executed', order });
+    } else if (signal === 'SELL') {
+      const order = await client.submitOrder({
+        category: 'linear',
+        symbol,
+        side: 'Sell',
+        orderType: 'Market',
+        qty,
+        timeInForce: 'GoodTillCancel',
+      });
+      console.log('✅ SELL Order Sent:', order);
+      res.send({ status: 'SELL Executed', order });
+    } else {
+      res.status(400).send({ error: 'Invalid signal' });
+    }
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Order failed' });
+    console.error('❌ Trade Error:', err);
+    res.status(500).send({ error: 'Trade failed', details: err });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🟢 Backend running on port ${PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`✅ Backend running on port ${process.env.PORT || 3000}`);
 });
