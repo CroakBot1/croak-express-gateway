@@ -1,16 +1,16 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import { RestClientV5 } from '@bybit-api/sdk';
+import { LinearClient } from 'bybit-api';
 
 dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 
-const client = new RestClientV5({
+const client = new LinearClient({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
-  testnet: false, // set to true if you are using testnet
+  testnet: false,
 });
 
 app.post('/signal', async (req, res) => {
@@ -22,24 +22,22 @@ app.post('/signal', async (req, res) => {
     const qty = 0.01;
 
     if (signal === 'BUY') {
-      const order = await client.submitOrder({
-        category: 'linear',
+      const order = await client.placeActiveOrder({
         symbol,
         side: 'Buy',
-        orderType: 'Market',
+        order_type: 'Market',
         qty,
-        timeInForce: 'GoodTillCancel',
+        time_in_force: 'GoodTillCancel',
       });
       console.log('✅ BUY Order Sent:', order);
       res.send({ status: 'BUY Executed', order });
     } else if (signal === 'SELL') {
-      const order = await client.submitOrder({
-        category: 'linear',
+      const order = await client.placeActiveOrder({
         symbol,
         side: 'Sell',
-        orderType: 'Market',
+        order_type: 'Market',
         qty,
-        timeInForce: 'GoodTillCancel',
+        time_in_force: 'GoodTillCancel',
       });
       console.log('✅ SELL Order Sent:', order);
       res.send({ status: 'SELL Executed', order });
