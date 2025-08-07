@@ -3,7 +3,8 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import { LinearClient } from 'bybit-api';
+import pkg from 'bybit-api'; // ← FIXED IMPORT
+const { LinearClient } = pkg;
 
 dotenv.config();
 const app = express();
@@ -24,10 +25,9 @@ app.post('/signal', async (req, res) => {
   console.log(`📡 [${timestamp}] Received signal: ${signal}`);
 
   try {
-    const symbol = 'BTCUSDT'; // Or any other trading pair
-    const qty = 0.01;         // Adjust your trading quantity here
+    const symbol = 'BTCUSDT';
+    const qty = 0.01;
 
-    // 🚀 Execute Buy Order
     if (signal === 'BUY') {
       const order = await client.placeActiveOrder({
         symbol,
@@ -39,7 +39,6 @@ app.post('/signal', async (req, res) => {
       console.log('✅ BUY Order Sent:', order);
       res.send({ status: 'BUY Executed', time: timestamp, order });
 
-    // 🧨 Execute Sell Order
     } else if (signal === 'SELL') {
       const order = await client.placeActiveOrder({
         symbol,
