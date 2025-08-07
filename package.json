@@ -1,15 +1,14 @@
 {
-  "name": "bybit-signal-trader",
+  "name": "bybit-auto-bot",
   "version": "1.0.0",
-  "description": "Auto executes Bybit Futures trades from browser signals",
+  "description": "Automated Bybit Buy/Sell Execution Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "bybit-api": "^5.4.0",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "bybit-api": "^2.0.17"
   }
 }
