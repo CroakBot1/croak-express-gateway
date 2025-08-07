@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "ETHUSDT Bybit Scalping Bot with WebSocket and AI Voice",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
