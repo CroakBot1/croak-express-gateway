@@ -1,59 +1,65 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const { WebsocketClient, RestClientV5 } = require('bybit-api');
+import express from 'express';
+import { WebSocket } from 'ws';
+import http from 'http';
+import { Server } from 'socket.io';
+import dotenv from 'dotenv';
+import axios from 'axios';
 
 dotenv.config();
 
 const app = express();
-app.use(bodyParser.json());
+const server = http.createServer(app);
+const io = new Server(server);
 
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
+const SYMBOL = 'ETHUSDT';
 
-// 🔐 REST client for executing orders
-const restClient = new RestClientV5({
-  key: process.env.BYBIT_API_KEY,
-  secret: process.env.BYBIT_API_SECRET,
-  testnet: false, // Set to true if using testnet
+let lastPrice = null;
+
+app.use(express.static('public')); // serve frontend files from /public folder
+
+app.get('/api/price', (req, res) => {
+  res.json({ price: lastPrice });
 });
 
-// ✅ BUY / SELL SIGNAL HANDLER
-app.post('/signal', async (req, res) => {
-  const { side, symbol, qty, leverage } = req.body;
+// Start Bybit WebSocket connection
+const bybitWs = new WebSocket('wss://stream.bybit.com/v5/public/linear');
 
-  if (!side || !symbol || !qty || !leverage) {
-    return res.status(400).json({ error: 'Missing required parameters.' });
-  }
+bybitWs.on('open', () => {
+  console.log('✅ WebSocket connected');
+  const subscribeMessage = {
+    op: 'subscribe',
+    args: [`tickers.${SYMBOL}`]
+  };
+  bybitWs.send(JSON.stringify(subscribeMessage));
+});
 
+bybitWs.on('message', (data) => {
   try {
-    // Set leverage
-    await restClient.setLeverage({
-      category: 'linear',
-      symbol,
-      buyLeverage: leverage,
-      sellLeverage: leverage,
-    });
+    const msg = JSON.parse(data);
+    const ticker = msg.data;
 
-    // Place market order
-    const order = await restClient.submitOrder({
-      category: 'linear',
-      symbol,
-      side,
-      orderType: 'Market',
-      qty,
-      timeInForce: 'GoodTillCancel',
-    });
-
-    res.json({
-      message: 'Order executed',
-      order,
-    });
+    if (ticker && ticker.lastPrice) {
+      lastPrice = parseFloat(ticker.lastPrice);
+      io.emit('priceUpdate', { price: lastPrice });
+      console.log('🔁 Price:', lastPrice);
+    }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to execute order', details: err.message });
+    console.error('❌ Parse Error:', err.message);
   }
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Croak Gateway listening on port ${port}`);
+bybitWs.on('error', (err) => {
+  console.error('❌ WebSocket error:', err.message);
+});
+
+io.on('connection', (socket) => {
+  console.log('📡 Client connected');
+  if (lastPrice) {
+    socket.emit('priceUpdate', { price: lastPrice });
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
