@@ -1,19 +1,15 @@
 {
-  "name": "bybit-alert",
+  "name": "bybit-render-backend",
   "version": "1.0.0",
-  "description": "ETHUSDT Bybit Scalping Bot with WebSocket and AI Voice",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "axios": "^1.6.8",
-    "bybit-api": "^3.3.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
-    "socket.io": "^4.7.5",
-    "ws": "^8.17.0"
+    "axios": "^1.6.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "express": "^4.18.2"
   }
 }
