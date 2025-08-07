@@ -1,57 +1,41 @@
-require('dotenv').config();
-const express = require('express');
-const bodyParser = require('body-parser');
-const { RestClientV5 } = require('bybit-api');
+require("dotenv").config();
+const express = require("express");
+const { WebsocketClient, RestClientV5 } = require("bybit-api");
 
 const app = express();
-const port = 3000;
+app.use(express.json());
 
-app.use(bodyParser.json());
+const port = process.env.PORT || 3000;
 
-// ✅ BYBIT FUTURES CLIENT INIT
-const client = new RestClientV5({
+const restClient = new RestClientV5({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
-  testnet: process.env.USE_TESTNET === 'true',
+  testnet: process.env.BYBIT_MODE !== "live"
 });
 
-// ✅ TRADE FUNCTION
-async function placeOrder(signal) {
+app.post("/signal", async (req, res) => {
+  const { action, symbol, qty } = req.body;
+
   try {
-    const side = signal.toUpperCase(); // BUY or SELL
-    const response = await client.submitOrder({
-      category: 'linear',
-      symbol: 'ETHUSDT',
+    const side = action.toUpperCase(); // BUY or SELL
+
+    const order = await restClient.submitOrder({
+      category: "linear",
+      symbol: symbol || "ETHUSDT",
       side: side,
-      orderType: 'Market',
-      qty: '0.01', // ⚠️ Change to desired qty
-      timeInForce: 'GoodTillCancel',
+      orderType: "Market",
+      qty: qty || "0.01",
+      timeInForce: "GoodTillCancel"
     });
 
-    console.log(`${side} order placed`, response);
-    return response;
+    console.log(`✅ ${side} executed`, order);
+    res.json({ status: "success", order });
   } catch (err) {
-    console.error(`Error placing ${signal} order:`, err);
-    throw err;
-  }
-}
-
-// ✅ SIGNAL ENDPOINT
-app.post('/signal', async (req, res) => {
-  const { signal } = req.body;
-
-  if (!signal || !['buy', 'sell'].includes(signal.toLowerCase())) {
-    return res.status(400).json({ error: 'Invalid signal' });
-  }
-
-  try {
-    const result = await placeOrder(signal);
-    res.json({ status: 'Order executed', result });
-  } catch (error) {
-    res.status(500).json({ error: 'Order failed', details: error.message });
+    console.error("❌ Error placing order", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Bot listening on http://localhost:${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
