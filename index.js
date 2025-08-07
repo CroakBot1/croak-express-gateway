@@ -1,66 +1,43 @@
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const crypto = require('crypto');
+require('dotenv').config();
+const axios = require('axios');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(bodyParser.json());
 
-const API_KEY = process.env.BYBIT_API_KEY;
-const API_SECRET = process.env.BYBIT_API_SECRET;
-
-async function placeOrder(side) {
-  const timestamp = Date.now().toString();
-  const recvWindow = '5000';
-  const symbol = 'ETHUSDT';
-  const qty = '0.01';
-  const price = ''; // For market order, price is not required
-
-  const params = new URLSearchParams({
-    category: 'linear',
-    symbol,
-    side: side.toUpperCase(),
-    orderType: 'Market',
-    qty,
-    timestamp,
-    recvWindow
-  });
-
-  const signature = crypto.createHmac('sha256', API_SECRET)
-    .update(params.toString())
-    .digest('hex');
-
-  const headers = {
-    'X-BYBIT-API-KEY': API_KEY,
-    'X-BYBIT-SIGN': signature
-  };
-
-  try {
-    const res = await axios.post('https://api.bybit.com/v5/order/create', null, {
-      params,
-      headers
-    });
-    return { success: true, data: res.data };
-  } catch (err) {
-    return { success: false, error: err.response?.data || err.message };
-  }
-}
-
+// Endpoint to receive buy/sell signals from frontend
 app.post('/signal', async (req, res) => {
   const { action } = req.body;
+
   if (!['buy', 'sell'].includes(action)) {
-    return res.status(400).json({ message: 'Invalid action' });
+    return res.status(400).json({ message: 'Invalid action.' });
   }
 
-  const result = await placeOrder(action);
-  if (result.success) {
-    res.json({ message: `Trade ${action.toUpperCase()} executed.` });
-  } else {
-    res.status(500).json({ message: 'Trade failed', error: result.error });
+  try {
+    // Example: send order to Bybit
+    const result = await axios.post('https://api.bybit.com/v5/order/create', {
+      category: 'linear',
+      symbol: 'ETHUSDT',
+      side: action.toUpperCase(),
+      orderType: 'Market',
+      qty: 0.01,
+      timeInForce: 'GoodTillCancel',
+      apiKey: process.env.BYBIT_API_KEY,
+      // Add signature and secret logic if needed here
+    });
+
+    res.json({ message: `${action} order sent`, result: result.data });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: 'Order failed' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🧠 Backend running on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🟢 Backend running on port ${PORT}`);
+});
