@@ -2,94 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>YouLikeHits Bot 💥</title>
-  <style>
-    body {
-      background: #000;
-      color: #0f0;
-      font-family: monospace;
-      padding: 20px;
-    }
-    h1 {
-      color: #0f0;
-      font-size: 22px;
-      margin-bottom: 10px;
-    }
-    #status {
-      margin-top: 10px;
-      font-size: 16px;
-      white-space: pre-wrap;
-    }
-    .log {
-      background: #111;
-      padding: 10px;
-      margin-top: 20px;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #0f0;
-    }
-  </style>
+  <title>Bybit Signal Frontend</title>
 </head>
-<body>
-  <h1>💻 YouLikeHits Frontend Bot (Render + Decodo)</h1>
-  <div id="status">🔄 Initializing...</div>
-  <div class="log" id="logOutput"></div>
+<body style="font-family: sans-serif; text-align: center; padding: 30px;">
+  <h1>📡 Bybit Trading Signal UI</h1>
+  <button onclick="sendSignal('buy')">Buy Signal</button>
+  <button onclick="sendSignal('sell')">Sell Signal</button>
+  <p id="status">Status: Idle</p>
 
   <script>
-    const PROXY_ENDPOINT = '/proxy?url=https://www.youlikehits.com/youtubeviews.php';
-    const status = document.getElementById('status');
-    const logOutput = document.getElementById('logOutput');
-
-    function log(message) {
-      const time = new Date().toLocaleTimeString();
-      const line = `[${time}] ${message}`;
-      console.log(line);
-      status.innerText = message;
-      logOutput.innerText += line + '\n';
-      logOutput.scrollTop = logOutput.scrollHeight;
-    }
-
-    async function wait(ms) {
-      return new Promise(res => setTimeout(res, ms));
-    }
-
-    async function fetchAndRun(loop = 1) {
+    async function sendSignal(action) {
+      document.getElementById("status").textContent = `Sending ${action}...`;
       try {
-        log(`🔁 Loop #${loop}: Connecting to proxy...`);
-        const res = await fetch(PROXY_ENDPOINT, {
-          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        const res = await fetch('https://your-backend-url.onrender.com/signal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
         });
-        const html = await res.text();
-
-        log(`📄 Loop #${loop}: Page loaded. Parsing...`);
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        const foundView = [...doc.querySelectorAll('input')]
-          .find(btn => btn.value === 'View');
-
-        if (!foundView) {
-          log(`⚠️ Loop #${loop}: No "View" button found. Retrying in 20s...`);
-          await wait(20000);
-          return fetchAndRun(loop + 1);
-        }
-
-        log(`🚀 Loop #${loop}: Simulating 60s watch time...`);
-        await wait(60000 + Math.floor(Math.random() * 10000));
-
-        log(`✅ Loop #${loop}: View simulated. Reloading in 5s...`);
-        await wait(5000);
-        return fetchAndRun(loop + 1);
-
+        const data = await res.json();
+        document.getElementById("status").textContent = `✅ ${data.message}`;
       } catch (err) {
-        log(`❌ Loop #${loop}: Error - ${err.message}. Retrying in 10s...`);
-        await wait(10000);
-        return fetchAndRun(loop + 1);
+        document.getElementById("status").textContent = `❌ Error: ${err.message}`;
       }
     }
-
-    fetchAndRun();
   </script>
 </body>
 </html>
