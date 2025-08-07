@@ -1,15 +1,19 @@
 {
-  "name": "croak-express-gateway",
+  "name": "bybit-trading-bot",
   "version": "1.0.0",
-  "description": "Express backend for Croak Bot V5 using Bybit API",
+  "description": "AI Bybit Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
-    "bybit-api": "^5.0.31",
+    "bybit-api": "^3.3.0",         // 🔁 Rolled back to a stable version
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2"
+    "technicalindicators": "^3.1.0",
+    "ws": "^8.15.1",
+    "axios": "^1.6.8"
   }
 }
