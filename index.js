@@ -1,10 +1,7 @@
-// backend/index.js
-
 import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import pkg from 'bybit-api'; // ← FIXED IMPORT
-const { LinearClient } = pkg;
+import { LinearClient } from '@bybit-api/sdk'; // ← correct SDK
 
 dotenv.config();
 const app = express();
@@ -14,10 +11,9 @@ app.use(bodyParser.json());
 const client = new LinearClient({
   key: process.env.BYBIT_API_KEY,
   secret: process.env.BYBIT_API_SECRET,
-  testnet: false, // << MAINNET LIVE
+  testnet: false, // MAINNET
 });
 
-// ✅ Signal endpoint (from frontend)
 app.post('/signal', async (req, res) => {
   const { signal } = req.body;
   const timestamp = new Date().toLocaleString();
@@ -59,7 +55,6 @@ app.post('/signal', async (req, res) => {
   }
 });
 
-// 🟢 Start server
 app.listen(process.env.PORT || 3000, () => {
   console.log(`✅ Backend live on port ${process.env.PORT || 3000}`);
 });
