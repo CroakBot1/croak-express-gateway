@@ -1,15 +1,15 @@
 {
   "name": "bybit-signal-executor",
   "version": "1.0.0",
-  "main": "index.js",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "@bybit-api/sdk": "^2.19.3",
     "body-parser": "^1.20.2",
-    "bybit-api": "git+https://github.com/tiagosiebler/bybit-api.git"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
   }
 }
