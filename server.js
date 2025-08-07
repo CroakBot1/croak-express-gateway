@@ -11,14 +11,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-function generateSignature(params, apiSecret) {
-  const orderedParams = Object.keys(params).sort().reduce((obj, key) => {
-    obj[key] = params[key];
+function generateSignature(payload, secret) {
+  const ordered = Object.keys(payload).sort().reduce((obj, key) => {
+    obj[key] = payload[key];
     return obj;
   }, {});
-
-  const paramString = Object.entries(orderedParams).map(([key, value]) => `${key}=${value}`).join('&');
-  return crypto.createHmac('sha256', apiSecret).update(paramString).digest('hex');
+  const query = Object.entries(ordered).map(([k, v]) => `${k}=${v}`).join('&');
+  return crypto.createHmac('sha256', secret).update(query).digest('hex');
 }
 
 app.post('/signal', async (req, res) => {
@@ -34,10 +33,10 @@ app.post('/signal', async (req, res) => {
     symbol: 'ETHUSDT',
     side: action.toUpperCase(),
     orderType: 'Market',
-    qty: 0.01,
+    qty: '0.01',
     timeInForce: 'GoodTillCancel',
-    apiKey: process.env.BYBIT_API_KEY,
-    timestamp
+    timestamp,
+    recvWindow: '5000'
   };
 
   const signature = generateSignature(params, process.env.BYBIT_API_SECRET);
@@ -46,15 +45,15 @@ app.post('/signal', async (req, res) => {
     const result = await axios.post('https://api.bybit.com/v5/order/create', params, {
       headers: {
         'X-BYBIT-API-KEY': process.env.BYBIT_API_KEY,
-        'X-BYBIT-SIGNATURE': signature,
+        'X-BYBIT-SIGN': signature,
         'Content-Type': 'application/json'
       }
     });
 
     res.json({ message: `${action} order sent`, result: result.data });
   } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.status(500).json({ error: 'Order failed', details: err.response?.data });
+    console.error('❌ Error from Bybit:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Order failed', details: err.response?.data || err.message });
   }
 });
 
