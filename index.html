@@ -1,100 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>🔐 UUID Login Area</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: Arial, sans-serif;
-    }
-
-    /* Overlay login screen */
-    #loginOverlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.95);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 999999;
-    }
-
-    #loginOverlay h1 {
-      margin-bottom: 2rem;
-      font-size: 3rem;
-      text-align: center;
-    }
-
-    #loginOverlay input {
-      padding: 1rem;
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      width: 300px;
-      border-radius: 8px;
-      border: none;
-    }
-
-    #loginOverlay button {
-      padding: 1rem 2rem;
-      font-size: 1.5rem;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #ff4c4c;
-      color: white;
-      font-weight: bold;
-    }
-
-    #warningMessage {
-      margin-top: 1rem;
-      color: red;
-      font-size: 1.2rem;
-      text-align: center;
-    }
-
-    /* Hidden by default */
-    #bigWarning {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: black;
-      color: red;
-      font-size: 5vw;
-      font-weight: bold;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      z-index: 9999999;
-      display: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>🔐 UUID Login Test</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<style>
+body, html { margin:0; padding:0; height:100%; font-family:Arial,sans-serif; overflow:hidden; }
+#loginOverlay, #bigWarning {
+  position: fixed; top:0; left:0; width:100vw; height:100vh;
+  display:flex; justify-content:center; align-items:center; text-align:center; font-family:Arial,sans-serif;
+}
+#loginOverlay {
+  flex-direction:column; background: rgba(0,0,0,0.95); color:white; z-index:999999;
+}
+#loginOverlay h1 { font-size:3rem; margin-bottom:2rem; }
+#loginOverlay input { padding:1rem; font-size:1.5rem; margin-bottom:1rem; width:300px; border-radius:8px; border:none; }
+#loginOverlay button { padding:1rem 2rem; font-size:1.5rem; border:none; border-radius:8px; cursor:pointer; background:#ff4c4c; color:white; font-weight:bold; }
+#warningMessage { margin-top:1rem; color:red; font-size:1.2rem; text-align:center; }
+#bigWarning { 
+  background:black; color:red; font-size:5vw; font-weight:bold; display:none; z-index:9999999; 
+  flex-direction:column; transition: background 0.25s, transform 0.1s; 
+}
+</style>
 </head>
 <body>
 
-  <!-- Login overlay -->
-  <div id="loginOverlay">
-    <h1>🔐 Enter Your UUID</h1>
-    <input type="text" id="uuidInput" placeholder="UUID here" />
-    <button onclick="validateUUID()">Login</button>
-    <div id="warningMessage"></div>
-  </div>
+<div id="loginOverlay">
+  <h1>🔐 Enter Your UUID</h1>
+  <input type="text" id="uuidInput" placeholder="UUID here">
+  <button id="loginBtn">Login</button>
+  <div id="warningMessage"></div>
+</div>
 
-  <!-- Permanent block overlay -->
-  <div id="bigWarning">❌ UUID NOT RECOGNIZED<br>ACCESS DENIED</div>
+<div id="bigWarning">❌ UUID NOT RECOGNIZED<br>ACCESS DENIED</div>
 
-  <script>
-    const secretKey = "super-secret";
-    const allowedHashes = [
+<script>
+const secretKey = "super-secret";
+const allowedHashes = [
       "9e9e7a3549c867473f573b4d6bafe20f961e317f528f45a82e75cbbb6108ef95",
       "8e411a38bdbd2001fa5cafb46e8a25652934ffbeeca8e5c8e1c8ee1eee7a652d",
       "caa1bc9e79d6d02eeee64900c0f3580efc9d67c719272d7841c16004361f3c00",
@@ -127,44 +69,148 @@
       "116bb78583230318f24d72f4f64d89cc7b77bfab5a874532507e554d9749fb0f"
     ];
 
+const loginOverlay = document.getElementById("loginOverlay");
+const bigWarning = document.getElementById("bigWarning");
+const warningMessage = document.getElementById("warningMessage");
 
-    const loginOverlay = document.getElementById("loginOverlay");
-    const bigWarning = document.getElementById("bigWarning");
-    const warningMessage = document.getElementById("warningMessage");
+function selfDestruct(){
+  loginOverlay.style.display="none";
+  bigWarning.style.display="flex";
+  document.querySelectorAll("input, button").forEach(el=>{
+    el.disabled=true;
+    el.style.pointerEvents="none";
+  });
+}
 
-    // Check if user already blocked permanently
-    if (localStorage.getItem("uuidBlockedForever") === "true") {
-      showWarningForever();
+// Validate UUID using CryptoJS only (bypass WASM for testing)
+function validateUUID(){
+  const uuid = document.getElementById("uuidInput").value.trim();
+  const isValidFormat = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+  if(!isValidFormat){ 
+    warningMessage.textContent="❌ Invalid UUID format!"; 
+    return; 
+  }
+
+  const hash = CryptoJS.SHA256(uuid + secretKey).toString();
+  if(allowedHashes.includes(hash)){
+    localStorage.setItem("uuidValidated","true");
+    loginOverlay.style.display="none";
+    bigWarning.style.display="none";
+    alert("✅ UUID valid. Access granted.");
+  } else {
+    warningMessage.textContent = "❌ UUID NOT RECOGNIZED!";
+    selfDestruct();
+  }
+}
+
+document.getElementById("loginBtn").onclick = validateUUID;
+
+// ================= Audio Beep =================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function play_beep(){
+  const oscillator = audioCtx.createOscillator();
+  oscillator.type = 'square';
+  oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+  oscillator.connect(audioCtx.destination);
+  oscillator.start();
+  oscillator.stop(audioCtx.currentTime + 0.15);
+}
+window.play_beep = play_beep;
+
+// ================= Multi-Tab Persistent Block =================
+const blockChannel = new BroadcastChannel("uuidBlockChannel");
+function broadcastBlock(){ blockChannel.postMessage({blocked:true}); }
+blockChannel.onmessage = e=>{ if(e.data.blocked) selfDestruct(); };
+
+// ================= Self-Destruct =================
+function selfDestruct(){
+  set_blocked_forever();
+  localStorage.setItem("uuidBlockedForever","true");
+  broadcastBlock();
+
+  loginOverlay.style.display="none";
+  bigWarning.style.display="flex";
+  document.querySelectorAll("input, button").forEach(el=>{
+    el.disabled=true;
+    el.style.pointerEvents="none";
+  });
+
+  setInterval(()=>{ alert("❌ UUID NOT RECOGNIZED - ACCESS DENIED"); },1000);
+
+  function flashBeepMorphLoop(){
+    bigWarning.style.background = next_flash_color();
+    wasm_flash_and_beep();
+
+    const x = (Math.random()-0.5)*20;
+    const y = (Math.random()-0.5)*20;
+    const scale = 1 + (Math.random()-0.5)*0.05;
+    bigWarning.style.transform = `translate(${x}px,${y}px) scale(${scale})`;
+
+    setTimeout(flashBeepMorphLoop, Math.random()*200 + 100);
+  }
+  flashBeepMorphLoop();
+}
+
+// Persistent block check
+if(is_blocked_forever() || localStorage.getItem("uuidBlockedForever")==="true") selfDestruct();
+if(localStorage.getItem("uuidValidated")==="true") loginOverlay.style.display="none";
+
+// ================= WASM UUID Login =================
+document.getElementById("loginBtn").onclick = function(){
+  const uuid = document.getElementById("uuidInput").value.trim();
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+  if(!isValidUUID){ warningMessage.textContent="❌ Invalid UUID format!"; return; }
+
+  const isAllowed = validate_uuid(uuid, secretKey, allowedHashes);
+  if(!isAllowed){ selfDestruct(); } 
+  else { localStorage.setItem("uuidValidated","true"); loginOverlay.style.display="none"; console.log("✅ UUID valid. Access granted."); }
+};
+
+// ================= Ultra-Sensitive DevTools + Mobile Trap =================
+(function(){
+  let devtoolsOpen=false;
+  const checkDevTools = () => {
+    try { if(wasm_check_devtools()){ selfDestruct(); } } catch(e){ selfDestruct(); }
+    const widthDiff = window.outerWidth - window.innerWidth > 160;
+    const heightDiff = window.outerHeight - window.innerHeight > 160;
+    const start = performance.now(); debugger;
+    const debuggerOpen = performance.now() - start > 100;
+    if(widthDiff || heightDiff || debuggerOpen){ if(!devtoolsOpen){ devtoolsOpen=true; selfDestruct(); } }
+    else devtoolsOpen=false;
+  };
+
+  window.addEventListener('keydown', e=>{
+    if(e.key==="F12"||(e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key))||(e.ctrlKey && e.key==="U")){
+      e.preventDefault(); selfDestruct();
     }
+  });
 
-    function showWarningForever() {
-      loginOverlay.style.display = "none";
-      bigWarning.style.display = "flex";
+  new MutationObserver(()=>selfDestruct()).observe(document.body, {childList:true, subtree:true});
+  ['log','error','warn','info','debug','table','dir'].forEach(m=>console[m]=()=>{ selfDestruct(); });
 
-      // Continuous alert every 1 second
-      setInterval(() => {
-        alert("❌ UUID NOT RECOGNIZED - ACCESS DENIED");
-      }, 1000);
-    }
+  document.addEventListener('contextmenu', e=>{ e.preventDefault(); selfDestruct(); });
+  document.addEventListener('gesturestart', e=>{ selfDestruct(); });
+  document.addEventListener('touchstart', e=>{ if(e.touches.length>2) selfDestruct(); });
 
-    function validateUUID() {
-      const uuid = document.getElementById("uuidInput").value.trim();
-      const hash = CryptoJS.SHA256(uuid + secretKey).toString();
-      
-      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
-      const isAllowed = allowedHashes.includes(hash);
+  let lastWidth = window.innerWidth;
+  let lastHeight = window.innerHeight;
+  window.addEventListener('resize', ()=>{
+    if(Math.abs(window.innerWidth-lastWidth)>50||Math.abs(window.innerHeight-lastHeight)>50) selfDestruct();
+    lastWidth = window.innerWidth; lastHeight = window.innerHeight;
+  });
 
-      if (!isValidUUID || !isAllowed) {
-        // Block permanently
-        localStorage.setItem("uuidBlockedForever", "true");
-        showWarningForever();
-      } else {
-        // UUID valid, grant access
-        loginOverlay.style.display = "none";
-        console.log("✅ UUID valid. Access granted.");
-      }
-    }
-  </script>
+  setInterval(()=>{
+    const start = performance.now(); debugger;
+    if(performance.now()-start>100) selfDestruct();
+  },300);
+
+  window.addEventListener('devicemotion', e=>{
+    if(e.acceleration&&(Math.abs(e.acceleration.x)>50||Math.abs(e.acceleration.y)>50)) selfDestruct();
+  });
+
+  setInterval(checkDevTools,250);
+})();
+</script>
 
 </body>
 </html>
