@@ -1,4 +1,174 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🔐 UUID Login Area</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Overlay login screen */
+    #loginOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.95);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 999999;
+    }
+
+    #loginOverlay h1 {
+      margin-bottom: 2rem;
+      font-size: 3rem;
+      text-align: center;
+    }
+
+    #loginOverlay input {
+      padding: 1rem;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      width: 300px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    #loginOverlay button {
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #ff4c4c;
+      color: white;
+      font-weight: bold;
+    }
+
+    #warningMessage {
+      margin-top: 1rem;
+      color: red;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    /* Hidden by default */
+    #bigWarning {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      color: red;
+      font-size: 5vw;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 9999999;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login overlay -->
+  <div id="loginOverlay">
+    <h1>🔐 Enter Your UUID</h1>
+    <input type="text" id="uuidInput" placeholder="UUID here" />
+    <button onclick="validateUUID()">Login</button>
+    <div id="warningMessage"></div>
+  </div>
+
+  <!-- Permanent block overlay -->
+  <div id="bigWarning">❌ UUID NOT RECOGNIZED<br>ACCESS DENIED</div>
+
+  <script>
+    const secretKey = "super-secret";
+    const allowedHashes = [
+      "9e9e7a3549c867473f573b4d6bafe20f961e317f528f45a82e75cbbb6108ef95",
+      "8e411a38bdbd2001fa5cafb46e8a25652934ffbeeca8e5c8e1c8ee1eee7a652d",
+      "caa1bc9e79d6d02eeee64900c0f3580efc9d67c719272d7841c16004361f3c00",
+      "25de1525c18b6684adfe1bab0ebf6e38dfc3a31abf6d3b2f192d3edc17f772ef",
+      "13ab439fddbd710aee47644f0ce265b3b28829a8eccd833144f27253829aba97",
+      "92893c6781e7a078ef56dc72e6fc82cb6fb65874287103e10c6c31aff1222de0",
+      "2ebfbef190c8f9010c0aaa5a1b8c5d3481f61c7302d230e6e671aa37f9bdb340",
+      "4a241b7d732bd678d28ab81435e289694a7ba6e9e9ca6db529ed330bdcc9dfd7",
+      "fa771214ac0ac7519a46e9446738982ae7b8a6f008a327d467fbafc27f2e2ab8",
+      "e55d2c96cbfc7cec231b1bd3b35e1e2a350c7cc2a56551ea40672dc44772361c",
+      "4a39216c4749d848b0c1c632c5aba2707efcbeb18a1296074a58648b8f7f4486",
+      "b09d4b3aedcd28de9d2b46f0d331e8389a2deebf7bbe05440ae2da359c5ade5a",
+      "b7e5da215fb09ffeafa9113e31f0d96a52338d279046588ecbdd95d91d532a67",
+      "607d6b28cd7422b3544860f044439b8f3d6e49de8165729feb6e3cc239242e3a",
+      "07a8917a110827056a4bf0b00a28dae4c61fbba40268ede90c2bc863167aebc1",
+      "4e0b4914b0662d40b9090cdfba894dcaf17befb67a0210703c72c24a3716802f",
+      "55acb19964d973ae820ea0f777b447ca7ef7e1d18759a48c9a607483a5a17b5e",
+      "509b742fd9c1b32db4916b54a5927575f84997fa8d0c4835e04a44831a08bc3e",
+      "1984b0b6d2111fbf82b75b2a053b95100e86b5bdb9fca46584a2e3de18af2fe7",
+      "e2c1f2cf55e2a858259938b1f7e500acfe8b2420dc7b2d726f8ec9da2dfd8284",
+      "3a37ae712b1cc1b72684a092d9810e00b7c8568cbce975ba9924f8751bf98077",
+      "3d348ae922d2fcf651c98aef380cd598acc518e6722d4b073bbcf92984182714",
+      "b2921dc0a28cc1952276472516ee164f7f4b67817b9b8fa6b18398cf56ec7520",
+      "6881a06944da1aba1e2df649b9c8c52c63a30035c195ca5f76d42b8e8671de8c",
+      "2855a08abc2db5609abda2bac56735acdf0aede2821606400a68d53340829c94",
+      "1a27ad9764b1ca006b9e36dce18471f44ae3905a60b510730dbb158e368af921",
+      "8e3f36e1424dfcbefdfe5c0482b43d3f74060894fb6b7ce64226fa275614c51a",
+      "3d0d17536372bb4c7c10e639711acecfcac13825a41b61b32228a12b55ca737e",
+      "19565b6e688b2541f80e09c2b8f21c36fc10007c1769499b313f3a0199cd52b8",
+      "116bb78583230318f24d72f4f64d89cc7b77bfab5a874532507e554d9749fb0f"
+    ];
+
+
+    const loginOverlay = document.getElementById("loginOverlay");
+    const bigWarning = document.getElementById("bigWarning");
+    const warningMessage = document.getElementById("warningMessage");
+
+    // Check if user already blocked permanently
+    if (localStorage.getItem("uuidBlockedForever") === "true") {
+      showWarningForever();
+    }
+
+    function showWarningForever() {
+      loginOverlay.style.display = "none";
+      bigWarning.style.display = "flex";
+
+      // Continuous alert every 1 second
+      setInterval(() => {
+        alert("❌ UUID NOT RECOGNIZED - ACCESS DENIED");
+      }, 1000);
+    }
+
+    function validateUUID() {
+      const uuid = document.getElementById("uuidInput").value.trim();
+      const hash = CryptoJS.SHA256(uuid + secretKey).toString();
+      
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+      const isAllowed = allowedHashes.includes(hash);
+
+      if (!isValidUUID || !isAllowed) {
+        // Block permanently
+        localStorage.setItem("uuidBlockedForever", "true");
+        showWarningForever();
+      } else {
+        // UUID valid, grant access
+        loginOverlay.style.display = "none";
+        console.log("✅ UUID valid. Access granted.");
+      }
+    }
+  </script>
+
+</body>
+</html>
+<!DOCTYPE html>
 <html>
 <head>
   <title>📡 ETHUSDT 1m WebSocket + Smart Indicators</title>
