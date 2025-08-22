@@ -1,4 +1,4 @@
-// ================= GOD-TIER DEVTOOLS FIREWALL V14 MERGED =================
+// ================= GOD-TIER DEVTOOLS FIREWALL V14 MERGED + ADD-ONS =================
 (async function(){
     let devtoolsOpen={console:false,elements:false,network:false};
     let detectionMemory=JSON.parse(localStorage.getItem('devtoolsMemory')||'{}');
@@ -190,7 +190,6 @@
             checkMaxThreat();
         }
     }
-
     function checkMaxThreat(){ if(threatScore>=10) activateLockdown(); }
 
     initWebcam();
@@ -247,6 +246,57 @@
         });
     },3000);
 
-    console.log('%c🐸 GOD-TIER DEVTOOLS FIREWALL V14 MERGED ACTIVE 🐸','color:green;font-size:18px;font-weight:bold');
+    // ================= V14+ ADD-ONS INTEGRATION =================
 
+    // 1️⃣ Keyboard Pattern Analyzer
+    (function(){
+        let keySequence=[], maxLength=10;
+        const suspiciousPatterns=[
+            ['Control','Shift','I'],
+            ['F12'],
+            ['Control','Shift','C'],
+            ['Control','Shift','J']
+        ];
+        document.addEventListener('keydown',e=>{
+            keySequence.push(e.key);
+            if(keySequence.length>maxLength) keySequence.shift();
+            suspiciousPatterns.forEach(pattern=>{
+                if(pattern.every((k,i)=>keySequence[keySequence.length-pattern.length+i]===k)){
+                    if(window.setFrogExpression) window.setFrogExpression('predictive',3);
+                    if(window.triggerDetection) window.triggerDetection('predictive','Suspicious Key Combo Detected!');
+                }
+            });
+        });
+    })();
+
+    // 2️⃣ Clipboard Monitor
+    (function(){
+        document.addEventListener('copy',e=>{
+            if(window.setFrogExpression) window.setFrogExpression('tamper',2);
+            if(window.triggerDetection) window.triggerDetection('tamper','Copy action detected!');
+        });
+        document.addEventListener('paste',e=>{
+            if(window.setFrogExpression) window.setFrogExpression('tamper',2);
+            if(window.triggerDetection) window.triggerDetection('tamper','Paste action detected!');
+        });
+    })();
+
+    // 3️⃣ Accelerometer / Device Motion Monitor
+    (function(){
+        if(window.DeviceMotionEvent){
+            window.addEventListener('devicemotion',e=>{
+                const acc=Math.hypot(e.accelerationIncludingGravity.x||0,e.accelerationIncludingGravity.y||0,e.accelerationIncludingGravity.z||0);
+                if(acc>15){
+                    if(window.setFrogExpression) window.setFrogExpression('predictive',2);
+                    let score=parseFloat(localStorage.getItem('threatScore')||0);
+                    score+=0.5;
+                    localStorage.setItem('threatScore',score);
+                    if(score>=10 && window.activateLockdown) window.activateLockdown();
+                    if(window.triggerDetection) window.triggerDetection('predictive','Rapid device movement detected!');
+                }
+            });
+        }
+    })();
+
+    console.log('%c🐸 GOD-TIER DEVTOOLS FIREWALL V14 MERGED + ADD-ONS ACTIVE 🐸','color:green;font-size:18px;font-weight:bold');
 })();
