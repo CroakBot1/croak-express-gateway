@@ -1,398 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>⚛ Quantum Trading — Popup Overlay</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>⚛ Quantum Trading</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html,body { height: 100%; }
     body {
       font-family: 'Orbitron', sans-serif;
-      background: #06060a;
+      background: #000;
       color: #e0e0ff;
+      min-height: 100vh;
       overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* --- Backdrop / overlay --- */
+    /* Overlay style */
     .overlay {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(6px) saturate(1.1);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 30px;
-      transition: opacity .45s ease, visibility .45s ease;
-      visibility: visible;
-      opacity: 1;
-      overflow: auto;
-    }
-    .overlay.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    /* Modal behaves like a full "site" but inside overlay */
-    .modal {
-      width: min(1100px, 98vw);
-      max-height: calc(100vh - 60px);
-      background: linear-gradient(180deg, rgba(3,6,20,0.98), rgba(2,2,8,0.98));
-      border-radius: 14px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-      border: 1px solid rgba(30,245,255,0.08);
-      overflow: auto;
-      position: relative;
-      padding-bottom: 40px;
-    }
-
-    /* Make modal content scrollable while overlay fixed */
-    .modal-inner {
-      padding: 0;
-    }
-
-    /* Close (X) */
-    .close-btn {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      background: transparent;
-      color: #cfefff;
-      border: 1px solid rgba(255,255,255,0.06);
-      padding: 8px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 700;
-      z-index: 3;
-      backdrop-filter: blur(4px);
-    }
-    .close-btn:hover { transform: scale(1.04); }
-
-    /* Quantum Animated Background inside modal */
-    canvas#quantum-bg {
-      position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      z-index: 0;
-      border-radius: 14px;
-      pointer-events: none;
+      background: rgba(0,0,0,0.95);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.6s ease;
+    }
+
+    .overlay.fade-out {
+      animation: fadeOut 0.8s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    canvas#quantum-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
       background: radial-gradient(circle at center, #030b1a, #000);
     }
 
-    /* page content inside modal */
-    .content {
-      position: relative;
-      z-index: 2;
-      color: #e8f7ff;
-    }
-
     header {
-      background: rgba(10, 15, 40, 0.55);
-      padding: 20px 28px;
-      border-bottom: 1px solid rgba(30,245,255,0.06);
+      background: rgba(10, 15, 40, 0.8);
+      padding: 20px 40px;
+      border-bottom: 2px solid #1ef5ff;
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: sticky;
       top: 0;
-      z-index: 5;
-      backdrop-filter: blur(6px);
-      border-top-left-radius: 14px;
-      border-top-right-radius: 14px;
+      z-index: 10;
     }
     header h1 {
-      font-size: 1.4rem;
+      font-size: 1.8rem;
       color: #1ef5ff;
-      text-shadow: 0 0 8px #00eaff;
+      text-shadow: 0 0 10px #00eaff, 0 0 20px #0088ff;
     }
     nav a {
-      margin-left: 18px;
+      margin-left: 25px;
       text-decoration: none;
       color: #e0e0ff;
       font-weight: 500;
-      transition: color .25s;
-      font-size: 0.95rem;
+      transition: color .3s;
     }
     nav a:hover { color: #1ef5ff; }
 
     .hero {
-      min-height: 65vh;
+      height: 75vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
-      padding: 48px 28px;
       position: relative;
     }
-    .hero-content { max-width: 920px; }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      color: #fff;
+    }
     .hero h2 {
-      font-size: 2.6rem;
+      font-size: 3rem;
       color: #1ef5ff;
-      margin-bottom: 12px;
-      text-shadow: 0 0 12px #00ffff;
+      margin-bottom: 15px;
+      text-shadow: 0 0 15px #00ffff;
     }
     .hero p {
-      font-size: 1.05rem;
-      max-width: 740px;
+      font-size: 1.2rem;
+      max-width: 600px;
       margin: auto;
-      color: #dfefff;
     }
     .btn {
       margin-top: 20px;
-      padding: 12px 26px;
+      padding: 12px 25px;
       background: linear-gradient(90deg, #1ef5ff, #5b2bff);
       color: #fff;
       border: none;
-      border-radius: 9px;
-      font-weight: 800;
+      border-radius: 8px;
+      font-weight: bold;
       cursor: pointer;
-      transition: transform .18s ease, box-shadow .18s;
-      box-shadow: 0 8px 30px rgba(30,245,255,0.12);
-      font-size: 0.95rem;
+      transition: 0.3s;
+      box-shadow: 0 0 15px #1ef5ff;
     }
-    .btn:hover { transform: translateY(-3px); }
+    .btn:hover { transform: scale(1.05); }
 
     .section {
-      padding: 48px 36px;
-      max-width: 1100px;
-      margin: 0 auto;
+      padding: 60px 40px;
+      max-width: 1200px;
+      margin: auto;
       position: relative;
+      z-index: 2;
     }
     .section h3 {
       text-align: center;
-      font-size: 1.45rem;
-      margin-bottom: 18px;
+      font-size: 2rem;
+      margin-bottom: 25px;
       color: #1ef5ff;
+      text-shadow: 0 0 10px #00ffff;
     }
-    .section p { color: #cfdffb; text-align: center; max-width: 900px; margin: 0 auto 30px; }
-
+    .section p {
+      max-width: 900px;
+      margin: auto;
+      text-align: center;
+      font-size: 1.1rem;
+      line-height: 1.6rem;
+      margin-bottom: 40px;
+      color: #ccc;
+    }
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
     }
     .card {
-      background: rgba(20, 25, 55, 0.7);
-      padding: 18px;
-      border-radius: 12px;
+      background: rgba(20, 25, 55, 0.85);
+      padding: 25px;
+      border-radius: 15px;
       text-align: center;
-      border: 1px solid rgba(30,245,255,0.06);
-      transition: transform .25s, box-shadow .25s, border-color .25s;
+      border: 1px solid #1ef5ff33;
+      transition: 0.4s;
     }
     .card:hover {
-      transform: translateY(-6px);
+      transform: translateY(-8px);
       border-color: #1ef5ff;
-      box-shadow: 0 18px 40px rgba(30,245,255,0.06);
+      box-shadow: 0 0 20px #1ef5ff55;
     }
-
     footer {
       text-align: center;
-      padding: 18px;
-      background: transparent;
-      color: #9fb6d8;
-      border-top: 1px dashed rgba(30,245,255,0.04);
-      margin-top: 8px;
+      padding: 20px;
+      background: #050a1a;
+      color: #888;
+      border-top: 1px solid #1ef5ff33;
+      position: relative;
+      z-index: 2;
     }
-
-    /* small screens adjustments */
-    @media (max-width: 640px) {
-      .modal { width: 98vw; padding-bottom: 24px; }
-      .hero h2 { font-size: 1.6rem; }
-      .hero { padding: 28px 16px; min-height: 56vh; }
-      header { padding: 14px 18px; }
-    }
-
-    /* Main page (revealed after popup closes) */
-    main.site-revealed {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #bcdcff;
-      text-align: center;
-      padding: 40px;
-    }
-
   </style>
 </head>
 <body>
 
-  <!-- Overlay (popup) -->
-  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Quantum Trading Intro Popup">
-    <div class="modal" id="modal">
-      <button class="close-btn" id="closeBtn" aria-label="Close popup">✕</button>
+  <!-- Overlay Wrapper -->
+  <div class="overlay" id="overlay">
+    <!-- Quantum Animated Background -->
+    <canvas id="quantum-bg"></canvas>
 
-      <!-- animated background canvas inside modal -->
-      <canvas id="quantum-bg"></canvas>
+    <header>
+      <h1>⚛ Quantum Trading</h1>
+      <nav>
+        <a href="#">Home</a>
+        <a href="#about">About</a>
+        <a href="#works">How It Works</a>
+        <a href="#why">Why Us</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
 
-      <div class="modal-inner content" id="modalContent">
-        <header>
-          <h1>⚛ Quantum Trading</h1>
-          <nav>
-            <a href="#about">About</a>
-            <a href="#works">How It Works</a>
-            <a href="#why">Why Us</a>
-            <a href="#contact">Contact</a>
-          </nav>
-        </header>
-
-        <section class="hero" id="hero">
-          <div class="hero-content">
-            <h2>The Future of Trading</h2>
-            <p>Harness the power of quantum algorithms and AI-driven analysis to trade smarter, faster, and with unmatched precision.</p>
-            <button class="btn" id="getStartedBtn">Get Started</button>
-          </div>
-        </section>
-
-        <section class="section" id="about">
-          <h3>⚛ About Quantum Trading</h3>
-          <p>Quantum Trading is a revolutionary platform that combines the principles of quantum-inspired algorithms and artificial intelligence to optimize financial decisions. Unlike traditional trading systems, Quantum Trading explores multiple probabilities simultaneously, giving traders a significant edge in speed, accuracy, and risk management.</p>
-        </section>
-
-        <section class="section" id="works">
-          <h3>🔬 How It Works</h3>
-          <p>Our system uses advanced mathematical models inspired by quantum computing. This allows us to process massive amounts of data in parallel, identify hidden patterns, and predict price movements with high probability. The process follows three core steps:</p>
-          <div class="cards">
-            <div class="card">
-              <h4>1. Data Collection</h4>
-              <p>Market data is gathered from multiple exchanges, including order books, liquidity flows, and news sentiment.</p>
-            </div>
-            <div class="card">
-              <h4>2. Quantum Analysis</h4>
-              <p>Our algorithms analyze all possible outcomes simultaneously, identifying the most probable profitable trades.</p>
-            </div>
-            <div class="card">
-              <h4>3. Execution</h4>
-              <p>Trades are executed instantly with smart risk controls and automated stop-loss/take-profit management.</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="section" id="why">
-          <h3>🌌 Why Choose Quantum Trading?</h3>
-          <p>We are not just another trading platform. Our system is designed for the future, combining AI, quantum-inspired technology, and professional-grade execution tools.</p>
-          <div class="cards">
-            <div class="card">
-              <h4>⚡ Speed Advantage</h4>
-              <p>Process market changes in milliseconds with lightning-fast trade execution.</p>
-            </div>
-            <div class="card">
-              <h4>🎯 Precision</h4>
-              <p>Our probability-driven models minimize risk and maximize accuracy.</p>
-            </div>
-            <div class="card">
-              <h4>🔐 Security</h4>
-              <p>All trades are executed with enterprise-grade encryption and safety protocols.</p>
-            </div>
-          </div>
-        </section>
-
-        <footer id="contact">
-          <p>⚛ Quantum Trading © 2025 | All Rights Reserved</p>
-          <p>📧 Contact: support@quantumtrading.ai</p>
-        </footer>
+    <section class="hero">
+      <div class="hero-content">
+        <h2>The Future of Trading</h2>
+        <p>Harness the power of quantum algorithms and AI-driven analysis to trade smarter, faster, and with unmatched precision.</p>
+        <button class="btn" id="nextBtn">Get Started</button>
       </div>
-    </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section" id="about">
+      <h3>⚛ About Quantum Trading</h3>
+      <p>Quantum Trading is a revolutionary platform that combines the principles of quantum-inspired algorithms and artificial intelligence to optimize financial decisions. Unlike traditional trading systems, Quantum Trading explores multiple probabilities simultaneously, giving traders a significant edge in speed, accuracy, and risk management.</p>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="section" id="works">
+      <h3>🔬 How It Works</h3>
+      <p>Our system uses advanced mathematical models inspired by quantum computing. This allows us to process massive amounts of data in parallel, identify hidden patterns, and predict price movements with high probability. The process follows three core steps:</p>
+      <div class="cards">
+        <div class="card">
+          <h4>1. Data Collection</h4>
+          <p>Market data is gathered from multiple exchanges, including order books, liquidity flows, and news sentiment.</p>
+        </div>
+        <div class="card">
+          <h4>2. Quantum Analysis</h4>
+          <p>Our algorithms analyze all possible outcomes simultaneously, identifying the most probable profitable trades.</p>
+        </div>
+        <div class="card">
+          <h4>3. Execution</h4>
+          <p>Trades are executed instantly with smart risk controls and automated stop-loss/take-profit management.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section class="section" id="why">
+      <h3>🌌 Why Choose Quantum Trading?</h3>
+      <p>We are not just another trading platform. Our system is designed for the future, combining AI, quantum-inspired technology, and professional-grade execution tools.</p>
+      <div class="cards">
+        <div class="card">
+          <h4>⚡ Speed Advantage</h4>
+          <p>Process market changes in milliseconds with lightning-fast trade execution.</p>
+        </div>
+        <div class="card">
+          <h4>🎯 Precision</h4>
+          <p>Our probability-driven models minimize risk and maximize accuracy.</p>
+        </div>
+        <div class="card">
+          <h4>🔐 Security</h4>
+          <p>All trades are executed with enterprise-grade encryption and safety protocols.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer id="contact">
+      <p>⚛ Quantum Trading © 2025 | All Rights Reserved</p>
+      <p>📧 Contact: support@quantumtrading.ai</p>
+    </footer>
   </div>
 
-  <!-- The main page content that appears after popup is closed -->
-  <main class="site-revealed" id="siteMain" aria-hidden="true" style="display:none;">
-    <div>
-      <h2>Welcome to Quantum Trading</h2>
-      <p style="max-width:760px; margin:12px auto 0; color:#9fc9ff;">
-        You closed the intro popup. This is the page revealed after clicking <strong>Get Started</strong>.
-        Replace this with your real site content or navigation.
-      </p>
-    </div>
-  </main>
-
   <script>
-    // ========= Canvas Quantum Background (inside modal) =========
+    // Quantum Particle Background
     const canvas = document.getElementById("quantum-bg");
     const ctx = canvas.getContext("2d");
-    let particlesArray = [];
+    let particlesArray;
 
-    function resizeCanvasToModal() {
-      // size to modal element
-      const modal = document.getElementById('modal');
-      canvas.width = Math.max(600, modal.clientWidth);
-      canvas.height = Math.max(400, modal.clientHeight);
-    }
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    window.addEventListener('load', () => {
-      resizeCanvasToModal();
-      initParticles();
-      animate();
-    });
-
-    window.addEventListener('resize', () => {
-      resizeCanvasToModal();
-      initParticles();
+    window.addEventListener("resize", function(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      init();
     });
 
     class Particle {
-      constructor(x, y, dx, dy, size, color){
+      constructor(x, y, directionX, directionY, size, color){
         this.x = x;
         this.y = y;
-        this.dx = dx;
-        this.dy = dy;
+        this.directionX = directionX;
+        this.directionY = directionY;
         this.size = size;
         this.color = color;
       }
       draw(){
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
         ctx.fillStyle = this.color;
-        ctx.shadowBlur = 14;
+        ctx.shadowBlur = 15;
         ctx.shadowColor = this.color;
         ctx.fill();
       }
       update(){
-        if(this.x > canvas.width || this.x < 0) this.dx = -this.dx;
-        if(this.y > canvas.height || this.y < 0) this.dy = -this.dy;
-        this.x += this.dx;
-        this.y += this.dy;
+        if(this.x > canvas.width || this.x < 0){ this.directionX = -this.directionX; }
+        if(this.y > canvas.height || this.y < 0){ this.directionY = -this.directionY; }
+        this.x += this.directionX;
+        this.y += this.directionY;
         this.draw();
       }
     }
 
-    function initParticles(){
+    function init(){
       particlesArray = [];
-      const area = (canvas.width * canvas.height);
-      let numberOfParticles = Math.max(30, Math.floor(area / 25000));
-      for(let i=0;i<numberOfParticles;i++){
-        let size = (Math.random() * 2.2) + 0.8;
-        let x = Math.random() * (canvas.width - size * 2) + size;
-        let y = Math.random() * (canvas.height - size * 2) + size;
-        let dx = (Math.random() * 0.7) - 0.35;
-        let dy = (Math.random() * 0.7) - 0.35;
-        let color = Math.random() > 0.5 ? "rgba(30,245,255,0.95)" : "rgba(91,43,255,0.95)";
-        particlesArray.push(new Particle(x,y,dx,dy,size,color));
+      let numberOfParticles = (canvas.width * canvas.height) / 15000;
+      for(let i=0; i<numberOfParticles; i++){
+        let size = (Math.random() * 2) + 1;
+        let x = Math.random() * (innerWidth - size * 2);
+        let y = Math.random() * (innerHeight - size * 2);
+        let directionX = (Math.random() * 0.6) - 0.3;
+        let directionY = (Math.random() * 0.6) - 0.3;
+        let color = Math.random() > 0.5 ? "#1ef5ff" : "#5b2bff";
+        particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
       }
     }
 
-    function connectParticles(){
+    function connect(){
+      let opacityValue = 1;
       for(let a=0; a<particlesArray.length; a++){
-        for(let b=a+1; b<particlesArray.length; b++){
-          const dx = particlesArray[a].x - particlesArray[b].x;
-          const dy = particlesArray[a].y - particlesArray[b].y;
-          const distance = dx*dx + dy*dy;
-          const threshold = Math.pow(Math.min(canvas.width, canvas.height) / 8, 2);
-          if(distance < threshold){
-            let opacity = 1 - (distance / threshold);
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(30,245,255,${opacity*0.6})`;
+        for(let b=a; b<particlesArray.length; b++){
+          let distance = ((particlesArray[a].x - particlesArray[b].x) ** 2) 
+          + ((particlesArray[a].y - particlesArray[b].y) ** 2);
+          if(distance < (canvas.width/7) * (canvas.height/7)){
+            opacityValue = 1 - (distance/20000);
+            ctx.strokeStyle = "rgba(30,245,255,"+opacityValue+")";
             ctx.lineWidth = 1;
+            ctx.beginPath();
             ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
             ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
             ctx.stroke();
@@ -403,93 +321,26 @@
 
     function animate(){
       requestAnimationFrame(animate);
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      for(let p of particlesArray) p.update();
-      connectParticles();
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+      for(let i=0; i<particlesArray.length; i++){
+        particlesArray[i].update();
+      }
+      connect();
     }
 
-    // ========= Popup open/close logic =========
-    const overlay = document.getElementById('overlay');
-    const getStartedBtn = document.getElementById('getStartedBtn');
-    const closeBtn = document.getElementById('closeBtn');
-    const siteMain = document.getElementById('siteMain');
+    init();
+    animate();
 
-    // Prevent body scroll while popup active
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
+    // ====== Get Started Button Logic ======
+    const nextBtn = document.getElementById("nextBtn");
+    const overlay = document.getElementById("overlay");
 
-    function closeOverlay() {
-      overlay.classList.add('hidden');
-      // re-enable page scrolling
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-      // reveal main site placeholder (replace with your real content)
-      siteMain.style.display = 'flex';
-      siteMain.setAttribute('aria-hidden', 'false');
-      // optionally focus something on main site
-      siteMain.querySelector('h2')?.focus?.();
-    }
-
-    // click Get Started -> close popup (no redirect)
-    getStartedBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeOverlay();
+    nextBtn.addEventListener("click", () => {
+      overlay.classList.add("fade-out"); // fade-out effect
+      setTimeout(() => {
+        overlay.style.display = "none"; // remove overlay
+      }, 800); // match transition speed
     });
-
-    // top-right close X
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeOverlay();
-    });
-
-    // click outside modal (on overlay backdrop) closes popup
-    overlay.addEventListener('click', (e) => {
-      // only close when clicked directly on overlay (not inside modal)
-      if (e.target === overlay) closeOverlay();
-    });
-
-    // close on Esc
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (!overlay.classList.contains('hidden')) closeOverlay();
-      }
-    });
-
-    // Accessibility: trap focus inside modal while open
-    (function manageFocusTrap(){
-      const focusableSelectors = 'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
-      let focusable = [];
-      let firstEl, lastEl;
-      function refresh() {
-        const modalEl = document.getElementById('modal');
-        focusable = Array.from(modalEl.querySelectorAll(focusableSelectors)).filter(el => !el.hasAttribute('disabled'));
-        firstEl = focusable[0];
-        lastEl = focusable[focusable.length -1];
-      }
-      refresh();
-      // put initial focus into modal
-      window.setTimeout(() => { firstEl?.focus?.(); }, 120);
-
-      document.addEventListener('keydown', function(e){
-        if (overlay.classList.contains('hidden')) return;
-        if (e.key === 'Tab') {
-          refresh();
-          if (focusable.length === 0) { e.preventDefault(); return; }
-          if (e.shiftKey) {
-            if (document.activeElement === firstEl) {
-              e.preventDefault();
-              lastEl.focus();
-            }
-          } else {
-            if (document.activeElement === lastEl) {
-              e.preventDefault();
-              firstEl.focus();
-            }
-          }
-        }
-      });
-    })();
-
   </script>
 </body>
 </html>
