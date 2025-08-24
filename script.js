@@ -300,3 +300,110 @@
 
     console.log('%c🐸 GOD-TIER DEVTOOLS FIREWALL V14 MERGED + ADD-ONS ACTIVE 🐸','color:green;font-size:18px;font-weight:bold');
 })();
+
+// ================= SAFE DIVERSION: MASS SEARCH GENERATOR + BATCH OPENER =================
+(function(){
+  // 1) Generate thousands of search URLs (not opened yet)
+  const engines = [
+    q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+    q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+    q => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
+    q => `https://x.com/search?q=${encodeURIComponent(q)}`,
+    q => `https://www.reddit.com/search/?q=${encodeURIComponent(q)}`
+  ];
+
+  const topics = [
+    "frog memes","frog sounds","tree frog facts","rare frogs","poison dart frogs",
+    "amphibian biology","funny amphibians","cute frogs","frog art","kermit memes",
+    "frog wallpapers","frog aesthetics","frog habitats","frog documentaries",
+    "frog conservation","frog care","exotic frogs","frog gifs","frog quotes","frog jokes"
+  ];
+
+  // Combine topics + expansions to create thousands of distinct queries
+  const expansions = [
+    "HD","2025","best","top","funny","compilation","guide","facts","info","tutorial",
+    "live","playlist","shorts","gif","photo","pictures","wallpaper","4k","soundboard","free"
+  ];
+
+  const MAX_LINKS = 3000; // ✅ thousands possible, but not all opened
+  const links = [];
+  outer: for (let t of topics) {
+    for (let e of expansions) {
+      const q = `${t} ${e}`;
+      // rotate engines for variety
+      for (let make of engines) {
+        links.push(make(q));
+        if (links.length >= MAX_LINKS) break outer;
+      }
+    }
+  }
+
+  // 2) Build an overlay list (click-to-open)
+  function showSearchOverlay(){
+    if (document.getElementById('diversionOverlay')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'diversionOverlay';
+    wrap.style.cssText = `
+      position:fixed; inset:0; background:#0b0b0f; color:#e6ffe6; z-index:99999;
+      font-family:system-ui,Arial,sans-serif; display:flex; flex-direction:column;
+    `;
+
+    wrap.innerHTML = `
+      <div style="padding:14px; display:flex; gap:10px; align-items:center; border-bottom:1px solid #1f3b1f;">
+        <div style="font-weight:700; font-size:18px">🐸 Diversion Search Hub</div>
+        <div id="count" style="opacity:.8">Links ready: ${links.length.toLocaleString()}</div>
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center">
+          <label style="font-size:12px; opacity:.9">Batch size</label>
+          <input id="batchSize" type="number" min="1" max="10" value="5"
+                 style="width:60px; background:#111; color:#e6ffe6; border:1px solid #2a4; padding:4px; border-radius:6px"/>
+          <button id="openBatch" style="background:#1f7a1f; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer">
+            Open next batch
+          </button>
+          <button id="closeOverlay" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer">
+            Close
+          </button>
+        </div>
+      </div>
+      <div id="list" style="flex:1; overflow:auto; padding:12px; display:grid; gap:8px; grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
+    `;
+    document.body.appendChild(wrap);
+
+    // render first 300 as visible clickable links (rest are virtual)
+    const list = document.getElementById('list');
+    const visible = links.slice(0, 300);
+    for (let url of visible) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.textContent = url.replace(/^https?:\/\//,'');
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.style.cssText = "display:block; padding:10px; border:1px solid #1f3b1f; border-radius:8px; background:#0f1a0f; text-decoration:none; color:#cfe";
+      list.appendChild(a);
+    }
+
+    // 3) User-driven batch opening (respects popup blockers)
+    let index = 0;
+    const openBatchBtn = document.getElementById('openBatch');
+    const batchInput = document.getElementById('batchSize');
+    const closeBtn = document.getElementById('closeOverlay');
+
+    function openBatch(){
+      const n = Math.max(1, Math.min(10, parseInt(batchInput.value||5,10)));
+      let opened = 0;
+      while (opened < n && index < links.length) {
+        const url = links[index++];
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        if (win) { try{ win.opener = null; }catch(e){} }
+        opened++;
+      }
+      // Optional: also redirect current tab AFTER user gesture (sa last open)
+      // location.href = links[(index-1) % links.length];
+    }
+
+    openBatchBtn.addEventListener('click', openBatch);
+    closeBtn.addEventListener('click', ()=> wrap.remove());
+  }
+
+  // expose a function you can call from your detection
+  window.__FROG_showMassSearch = showSearchOverlay;
+})();
