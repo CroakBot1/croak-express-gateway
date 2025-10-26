@@ -269,3 +269,51 @@ document.write(unescape('%0A%3C%21DOCTYPE%20html%3E%0A%3Chtml%3E%0A%3Chead%3E%0A
   If the bot doesn’t work on your device, use a VPN or install the Tor browser and run it there.
   <button onclick="document.getElementById('bot-warning-banner').style.display='none'">Close</button>
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+(function () {
+  // ✅ Updated server link
+  const API_SERVER = "https://api-server-2-dkuk.onrender.com";
+  const DEBUG = true;
+  const _oldFetch = window.fetch;
+
+  const relayEndpoints = [
+    "/api/v3/ticker/price",
+    "/api/v3/exchangeInfo",
+    "/api/v3/depth",
+    "/api/v3/klines",
+    "/api/v3/ping"
+  ];
+
+  window.fetch = async function (url, options) {
+    try {
+      let proxiedUrl = url;
+
+      if (typeof url === "string") {
+        const match = relayEndpoints.find(e => url.includes(e));
+        if (match) {
+          proxiedUrl = url.replace(/^https:\/\/api\.binance\.com/, API_SERVER);
+          if (DEBUG) console.log("🔄 Relayed fetch →", proxiedUrl);
+        }
+      }
+
+      return await _oldFetch(proxiedUrl, options);
+    } catch (err) {
+      console.error(`❌ Relay error [${url}]:`, err);
+      throw err;
+    }
+  };
+})();
+</script>
